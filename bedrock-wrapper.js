@@ -1,8 +1,8 @@
 const { BedrockRuntimeClient, InvokeModelCommand } = require("@aws-sdk/client-bedrock-runtime");
 
 class BedrockAgentRuntimeWrapper {
-    constructor(region) {
-        this.client = new BedrockRuntimeClient({ region });
+    constructor(config) {
+        this.client = new BedrockRuntimeClient(config);
     }
 
     async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
@@ -25,7 +25,7 @@ class BedrockAgentRuntimeWrapper {
         try {
             const command = new InvokeModelCommand(params);
             const response = await this.client.send(command);
-            return JSON.parse(Buffer.from(response.body).toString());
+            return JSON.parse(new TextDecoder().decode(response.body));
         } catch (error) {
             throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }
