@@ -65,12 +65,13 @@ jobs:
       - name: Run Bedrock Analysis
         uses: your-repo/custom-bedrock-analysis@v1
         with:
-          ignore_patterns: '**/*.md,docs/**'
-          action_prompt: 'Analyze the code changes for potential performance improvements.'
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
-          memory_id: 'optional-memory-id'  # Optional
-          language_specific_prompts: '{"js":"Focus on ES6+ features and performance.","py":"Check for PEP 8 compliance and type hints."}'
+          action_prompt: |
+            Given the relevant code changes above, Analyze the Terraform configuration changes provided. 
+            Focus on identifying potential misconfigurations, security vulnerabilities, and improvements in resource optimization.
+          ignore_patterns: '**/*.md,docs/**'
+          
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

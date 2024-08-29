@@ -16,10 +16,10 @@ jobs:
         with:
           agent_id: ""
           agent_alias_id: ""
-          # memory_id: ""  # Optional memory ID
-          action_prompt: 'Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.'
-          # language_specific_prompts: '{"js":"For JavaScript, consider performance and ES6+ features.","py":"For Python, check PEP 8 compliance and use of type hints."}'
-          ignore_patterns: '**/*.md,docs/**'
+          action_prompt: |
+            Given the relevant code changes above, Analyze the Terraform configuration changes provided. 
+            Focus on identifying potential misconfigurations, security vulnerabilities, and improvements in resource optimization.
+          ignore_patterns: '**/*.md,docs/**,.github/**'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

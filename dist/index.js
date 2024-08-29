@@ -57629,15 +57629,12 @@ const bedrockConfig = {
 };
 const agentWrapper = new BedrockAgentRuntimeWrapper(bedrockConfig);
 
-
 async function main() {
     try {
         const ignorePatterns = core.getInput('ignore_patterns').split(',');
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
-        const memoryId = core.getInput('memory_id') || null;
-        const languageSpecificPrompts = JSON.parse(core.getInput('language_specific_prompts'));
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
 
@@ -57654,18 +57651,15 @@ async function main() {
         });
 
         const relevantCode = [];
-        const detectedLanguages = new Set();
 
         prFiles.forEach(file => {
             const filename = file.filename;
             const status = file.status;
-            const extension = path.extname(filename).slice(1);
 
             if (status === 'added' || status === 'modified' || status === 'renamed') {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
                 if (!isIgnored) {
                     relevantCode.push(`File: ${filename} (Status: ${status})\n\n\`\`\`diff\n${file.patch}\n\`\`\`\n\n`);
-                    detectedLanguages.add(extension);
                 }
             }
         });
@@ -57675,19 +57669,12 @@ async function main() {
             return;
         }
 
-        let languageSpecificPrompt = '';
-        detectedLanguages.forEach(lang => {
-            if (languageSpecificPrompts[lang]) {
-                languageSpecificPrompt += `\n${languageSpecificPrompts[lang]}`;
-            }
-        });
-
         const sessionId = process.env.GITHUB_RUN_ID;
-        const prompt = `${relevantCode.join('')}\n\n${actionPrompt}${languageSpecificPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        const prompt = `${relevantCode.join('')}\n\n${actionPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         core.debug(`Generated prompt:\n${prompt}`);
 
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId);
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
 
         const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length);
         await octokit.rest.issues.createComment({
