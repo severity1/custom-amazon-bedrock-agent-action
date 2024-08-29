@@ -2,15 +2,29 @@
 
 ![GitHub Action](https://img.shields.io/badge/Custom%20Bedrock%20Analysis-blue)
 
-This GitHub Action analyzes files in a pull request (PR) using an Amazon Bedrock Agent, providing detailed insights, potential improvements, and security considerations based on the code changes.
+This GitHub Action is a highly customizable tool that analyzes files in a pull request (PR) using an Amazon Bedrock Agent. You can tailor the analysis based on the specific knowledge base and prompt you choose for the agent, making it suitable for a wide range of use cases, from code quality checks to security assessments and more.
+
+![sequence diagram](docs/sequence_diagram.png)
 
 ## Features
 
-- **Amazon Bedrock Agent Integration**: Analyze PR files using a Bedrock Agent.
-- **Customizable Prompts**: Define specific analysis prompts.
-- **Language-Specific Analysis**: Provide tailored analysis for different programming languages.
-- **File Ignoring**: Ignore files or patterns, similar to `.gitignore`.
-- **Session Memory**: Optionally maintain session state with a `memory_id`.
+- **Customizable Agent Analysis**: Leverage Amazon Bedrock Agent's knowledge base and custom prompts to analyze PR files according to your specific requirements.
+- **Flexible Use Cases**: Adapt the action for various use cases such as code quality improvement, security assessments, performance optimizations, and more.
+- **Language-Specific Analysis**: Provide tailored analysis for different programming languages by configuring language-specific prompts.
+- **File Ignoring**: Define patterns to ignore certain files or directories, similar to `.gitignore`.
+- **Session Memory**: Optionally maintain session state with a `memory_id`, allowing for context-aware analysis across PRs.
+
+## Prerequisites
+
+Before using this GitHub Action, you need to complete the following steps:
+
+1. **Create an Amazon Bedrock Agent**: Set up an Amazon Bedrock Agent in your AWS account. This involves configuring the agent with a system prompt that defines the foundational behavior and knowledge base the agent will use during analysis.
+   
+2. *(Optional)* **Create an Amazon Bedrock Knowledgebase**: For more advanced use cases, you can create an Amazon Bedrock Knowledgebase and associate it with your Bedrock Agent. This allows the agent to leverage a specific set of documents or data during its analysis.
+
+   > **Disclaimer:** Using a Knowledgebase can significantly increase your cloud spend. Be sure to monitor usage and costs carefully to avoid unexpected charges.
+
+3. **Configure AWS Credentials**: Ensure you have the necessary AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`) configured as GitHub Secrets in your repository. These credentials will allow the GitHub Action to communicate with the Amazon Bedrock Agent.
 
 ## Inputs
 
