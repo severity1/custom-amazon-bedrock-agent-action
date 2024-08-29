@@ -1,6 +1,5 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
-const AWS = require('aws-sdk');
 const minimatch = require('minimatch');
 const path = require('path');
 const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');

@@ -54938,14 +54938,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 6416:
-/***/ ((module) => {
-
-module.exports = eval("require")("aws-sdk");
-
-
-/***/ }),
-
 /***/ 2209:
 /***/ ((module) => {
 
@@ -56918,7 +56910,6 @@ var __webpack_exports__ = {};
 (() => {
 const core = __nccwpck_require__(4181);
 const github = __nccwpck_require__(2726);
-const AWS = __nccwpck_require__(6416);
 const minimatch = __nccwpck_require__(6227);
 const path = __nccwpck_require__(1017);
 const { BedrockAgentRuntimeWrapper } = __nccwpck_require__(1555);
