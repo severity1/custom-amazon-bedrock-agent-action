@@ -457,7 +457,7 @@ Apache-2.0
    limitations under the License.
 
 
-@aws-sdk/client-bedrock-runtime
+@aws-sdk/client-bedrock-agent-runtime
 Apache-2.0
                                 Apache License
                            Version 2.0, January 2004

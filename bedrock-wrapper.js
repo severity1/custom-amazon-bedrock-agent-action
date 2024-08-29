@@ -1,31 +1,34 @@
-const { BedrockRuntimeClient, InvokeModelCommand } = require("@aws-sdk/client-bedrock-runtime");
+const { BedrockAgentRuntimeClient, InvokeAgentCommand } = require("@aws-sdk/client-bedrock-agent-runtime");
 
 class BedrockAgentRuntimeWrapper {
     constructor(config) {
-        this.client = new BedrockRuntimeClient(config);
+        this.client = new BedrockAgentRuntimeClient(config);
     }
 
     async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
-        const maxPromptLength = 24000;
-        const truncatedPrompt = prompt.length > maxPromptLength ? prompt.slice(0, maxPromptLength) + "..." : prompt;
-
-        const params = {
-            modelId: `agent/${agentId}/${agentAliasId}`,
-            contentType: "application/json",
-            accept: "application/json",
-            body: JSON.stringify({
-                sessionId,
-                inputText: truncatedPrompt,
-                enableTrace: false,
-                endSession: false,
-                ...(memoryId ? { memoryId } : {})
-            })
-        };
+        const command = new InvokeAgentCommand({
+            agentId,
+            agentAliasId,
+            sessionId,
+            inputText: prompt,
+            ...(memoryId ? { memoryId } : {})
+        });
 
         try {
-            const command = new InvokeModelCommand(params);
+            let completion = "";
             const response = await this.client.send(command);
-            return JSON.parse(new TextDecoder().decode(response.body));
+            
+            if (response.completion === undefined) {
+                throw new Error("Completion is undefined");
+            }
+
+            for await (let chunkEvent of response.completion) {
+                const chunk = chunkEvent.chunk;
+                const decodedResponse = new TextDecoder("utf-8").decode(chunk.bytes);
+                completion += decodedResponse;
+            }
+
+            return completion;
         } catch (error) {
             throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }
