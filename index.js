@@ -8,6 +8,7 @@ const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
 // Use GITHUB_TOKEN directly from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 const bedrockRuntime = new AWS.BedrockRuntime();
+const region = process.env.AWS_REGION || 'us-east-1';
 const agentWrapper = new BedrockAgentRuntimeWrapper(bedrockRuntime);
 
 async function main() {
