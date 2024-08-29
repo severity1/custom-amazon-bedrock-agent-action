@@ -1,0 +1,27 @@
+name: Custom Analysis Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Custom Analysis
+        uses: severity1/gazoo@main # Replace with your action repository and version
+        with:
+          agent_id: ""
+          agent_alias_id: ""
+          # memory_id: ""  # Optional memory ID
+          action_prompt: 'Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.'
+          # language_specific_prompts: '{"js":"For JavaScript, consider performance and ES6+ features.","py":"For Python, check PEP 8 compliance and use of type hints."}'
+          ignore_patterns: '**/*.md,docs/**'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
