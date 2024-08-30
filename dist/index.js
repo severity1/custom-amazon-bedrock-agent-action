@@ -57660,16 +57660,16 @@ async function main() {
         // Identify files already mentioned in previous comments
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
-            // Use regex to capture filenames mentioned in comments
-            const regex = /\b(\S+\.tf)\b:/g; // Adjust regex to match filenames with a .tf extension
+            // Use regex to capture filenames mentioned in comments followed by a colon
+            const regex = /\b(\S+?\.\S+)\b:/g;
             let match;
-            core.info(`Checking comment body: ${comment.body}`);
             while ((match = regex.exec(comment.body)) !== null) {
                 const filename = match[1].trim();
                 fileNamesInComments.add(filename);
                 core.info(`Found filename in comment: ${filename}`);
             }
         });
+        
 
         if (debug) {
             core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
@@ -57726,19 +57726,15 @@ async function main() {
         // Use the GitHub run ID as a session ID for invoking the Bedrock agent
         const sessionId = process.env.GITHUB_RUN_ID;
 
-        // Create the prompt for the Bedrock agent
-        const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n`;
-        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
+        // Conditionally create codePrompt based on fileNamesInComments
+        let codePrompt = '';
+        if (fileNamesInComments.size === 0) {
+            codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
+        }
+        
+        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\nThe diffs above contain the changes made in the PR.`;
 
-        const prompt = `
-${codePrompt}
-Use the files above to provide context on the changes made in this PR.
-
-${diffsPrompt}
-The diffs above contain the changes made in the PR.
-            
-${actionPrompt}
-Format your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         if (debug) {
             core.info(`Generated prompt:\n${prompt}`);
