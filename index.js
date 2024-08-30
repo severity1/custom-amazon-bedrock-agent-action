@@ -3,7 +3,7 @@ const github = require('@actions/github');
 const minimatch = require('minimatch');
 const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
 
-// Use GITHUB_TOKEN directly from environment variables
+// Initialize Octokit with the GITHUB_TOKEN from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
 // Initialize the Bedrock client with the default AWS SDK configuration
@@ -11,14 +11,16 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 
 async function main() {
     try {
+        // Read inputs from the GitHub Actions workflow
         const ignorePatterns = core.getInput('ignore_patterns').split(',');
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
-        const debug = core.getBooleanInput('debug'); // Read the debug input
+        const debug = core.getBooleanInput('debug');
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
 
+        // Validate necessary information
         if (!githubRepository || !prNumber) {
             core.setFailed("Missing required information to post comment");
             return;
@@ -27,31 +29,34 @@ async function main() {
         const [owner, repo] = githubRepository.split('/');
         core.info(`Processing PR #${prNumber} in repository ${owner}/${repo}`);
 
-        // Fetch files in the pull request
+        // Fetch files changed in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
             owner,
             repo,
             pull_number: prNumber
         });
-
         core.info(`Found ${prFiles.length} files in the pull request`);
 
-        // Fetch existing comments from the bot
+        // Fetch existing comments from the bot on this PR
         const { data: comments } = await octokit.rest.issues.listComments({
             owner,
             repo,
             issue_number: prNumber
         });
 
-        const botUser = github.context.actor; // Bot user who created the comments
+        // Identify files already mentioned in previous comments
+        const botUser = github.context.actor; // The bot's username
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
             if (comment.user.login === botUser) {
-                const regex = /### Content of ([^\n]+)\n\n```/g;
+                // Use regex to capture filenames mentioned in previous comments
+                const regex = /^\s*(\S+):/gm;
                 let match;
+                core.info(`Checking comment body: ${comment.body}`);
                 while ((match = regex.exec(comment.body)) !== null) {
                     const filename = match[1].trim();
                     fileNamesInComments.add(filename);
+                    core.info(`Found filename in comment: ${filename}`);
                 }
             }
         });
@@ -64,23 +69,26 @@ async function main() {
         const relevantDiffs = [];
         const fileContents = {};
 
-        // Process files in the PR
+        // Process each file in the pull request
         for (const file of prFiles) {
             const filename = file.filename;
             const status = file.status;
 
+            // Process files that were added, modified, or renamed
             if (status === 'added' || status === 'modified' || status === 'renamed') {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
-                
+
                 if (!isIgnored) {
+                    // Check if the file was already analyzed
                     if (!fileNamesInComments.has(filename)) {
-                        // Fetch full content for new files
+                        // Fetch the full content of the file
                         const { data: fileContent } = await octokit.rest.repos.getContent({
                             owner,
                             repo,
                             path: filename
                         });
 
+                        // Add the file content to the analysis list
                         if (fileContent && fileContent.type === 'file') {
                             const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
                             fileContents[filename] = content;
@@ -91,7 +99,7 @@ async function main() {
                         core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
                     }
 
-                    // Collect relevant diffs
+                    // Collect diffs (changes) for the file
                     relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
                 } else {
                     core.info(`File ignored: ${filename} (Status: ${status})`);
@@ -99,24 +107,27 @@ async function main() {
             }
         }
 
+        // Exit early if no relevant files or diffs were found
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
             core.warning("No relevant files found to analyze.");
             return;
         }
 
+        // Use the GitHub run ID as a session ID for invoking the Bedrock agent
         const sessionId = process.env.GITHUB_RUN_ID;
 
-        // Create prompts for relevant code and diffs
+        // Create the prompt for the Bedrock agent
         const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n`;
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        const prompt = `${codePrompt}       
+        const prompt = `
+${codePrompt}
 Use the files above to provide context on the changes made in this PR.
 
 ${diffsPrompt}
 The diffs above contain the changes made in the PR.
             
-${actionPrompt}        
+${actionPrompt}
 Format your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         if (debug) {
@@ -125,6 +136,7 @@ Format your response using Markdown, including appropriate headers and code bloc
 
         core.info(`Invoking agent with session ID: ${sessionId}`);
 
+        // Invoke the Bedrock agent with the generated prompt
         const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
 
         if (debug) {
@@ -133,6 +145,7 @@ Format your response using Markdown, including appropriate headers and code bloc
 
         core.info(`Posting comment to PR #${prNumber}`);
 
+        // Format the response as a Markdown comment and post it to the PR
         const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length);
         await octokit.rest.issues.createComment({
             owner,
@@ -148,8 +161,10 @@ Format your response using Markdown, including appropriate headers and code bloc
     }
 }
 
+// Format the response into a Markdown comment
 function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed) {
     return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n${response}`;
 }
 
+// Execute the main function
 main();
