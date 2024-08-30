@@ -57666,10 +57666,8 @@ async function main() {
             while ((match = regex.exec(comment.body)) !== null) {
                 const filename = match[1].trim();
                 fileNamesInComments.add(filename);
-                core.info(`Found filename in comment: ${filename}`);
             }
         });
-        
 
         if (debug) {
             core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
