@@ -47,11 +47,11 @@ async function main() {
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
             if (comment.user.login === botUser) {
-                if (comment.body.includes("### Content of")) {
-                    const match = comment.body.match(/### Content of (.+)\n\n```/g);
+                if (comment.body.includes("## Content of")) {
+                    const match = comment.body.match(/## Content of (.+)\n\n```/g);
                     if (match) {
                         match.forEach(entry => {
-                            const filename = entry.replace(/### Content of (.+)\n\n```/, '$1').trim();
+                            const filename = entry.replace(/## Content of (.+)\n\n```/, '$1').trim();
                             fileNamesInComments.add(filename);
                         });
                     }
@@ -108,10 +108,10 @@ async function main() {
         const sessionId = process.env.GITHUB_RUN_ID;
         
         // Create prompts for relevant code and diffs
-        const codePrompt = `### Content of Affected Files:\n\n${relevantCode.join('')}\n\n`;
-        const diffsPrompt = `### Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n\n`;
+        const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n\n`;
+        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n\n`;
 
-        const prompt = `${codePrompt}\n${diffsPrompt}\n\n${actionPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        const prompt = `${codePrompt}\n\n${diffsPrompt}\n\n${actionPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         if (debug) {
             core.info(`Generated prompt:\n${prompt}`);
@@ -143,7 +143,7 @@ async function main() {
 }
 
 function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed) {
-    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n${response}`;
+    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n\n### Diffs Analyzed: ${diffsAnalyzed}\n\n${response}`;
 }
 
 main();
