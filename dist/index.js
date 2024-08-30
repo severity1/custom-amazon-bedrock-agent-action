@@ -57650,7 +57650,7 @@ async function main() {
         });
         core.info(`Found ${prFiles.length} files in the pull request`);
 
-        // Fetch existing comments from the bot on this PR
+        // Fetch all comments on the pull request
         const { data: comments } = await octokit.rest.issues.listComments({
             owner,
             repo,
@@ -57658,19 +57658,16 @@ async function main() {
         });
 
         // Identify files already mentioned in previous comments
-        const botUser = github.context.actor; // The bot's username
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
-            if (comment.user.login === botUser) {
-                // Use regex to capture filenames mentioned in previous comments
-                const regex = /^\s*(\S+):/gm;
-                let match;
-                core.info(`Checking comment body: ${comment.body}`);
-                while ((match = regex.exec(comment.body)) !== null) {
-                    const filename = match[1].trim();
-                    fileNamesInComments.add(filename);
-                    core.info(`Found filename in comment: ${filename}`);
-                }
+            // Use regex to capture filenames mentioned in comments
+            const regex = /\b(\S+\.tf)\b:/g; // Adjust regex to match filenames with a .tf extension
+            let match;
+            core.info(`Checking comment body: ${comment.body}`);
+            while ((match = regex.exec(comment.body)) !== null) {
+                const filename = match[1].trim();
+                fileNamesInComments.add(filename);
+                core.info(`Found filename in comment: ${filename}`);
             }
         });
 
