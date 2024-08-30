@@ -15,6 +15,7 @@ async function main() {
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
+        const debug = core.getBooleanInput('debug'); // Read the debug input
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
 
@@ -24,13 +25,58 @@ async function main() {
         }
 
         const [owner, repo] = githubRepository.split('/');
+        core.info(`Processing PR #${prNumber} in repository ${owner}/${repo}`);
+
+        // Fetch files in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
             owner,
             repo,
             pull_number: prNumber
         });
 
+        core.info(`Found ${prFiles.length} files in the pull request`);
+
+        // Fetch existing comments from the bot
+        const { data: comments } = await octokit.rest.issues.listComments({
+            owner,
+            repo,
+            issue_number: prNumber
+        });
+
+        const botUser = github.context.actor; // Bot user who created the comments
+        const fileNamesInComments = new Set();
+        comments.forEach(comment => {
+            if (comment.user.login === botUser) {
+                if (comment.body.includes("### Content of")) {
+                    const match = comment.body.match(/### Content of (.+)\n\n```/g);
+                    if (match) {
+                        match.forEach(entry => {
+                            const filename = entry.replace(/### Content of (.+)\n\n```/, '$1').trim();
+                            fileNamesInComments.add(filename);
+                        });
+                    }
+                }
+            }
+        });
+
         const relevantCode = [];
+        const relevantDiffs = [];
+        const fileContents = {};
+
+        // Fetch full content for files in the PR
+        for (const file of prFiles) {
+            const filename = file.filename;
+            const { data: fileContent } = await octokit.rest.repos.getContent({
+                owner,
+                repo,
+                path: filename
+            });
+
+            if (fileContent && fileContent.type === 'file') {
+                const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
+                fileContents[filename] = content;
+            }
+        }
 
         prFiles.forEach(file => {
             const filename = file.filename;
@@ -39,24 +85,56 @@ async function main() {
             if (status === 'added' || status === 'modified' || status === 'renamed') {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
                 if (!isIgnored) {
-                    relevantCode.push(`File: ${filename} (Status: ${status})\n\n\`\`\`diff\n${file.patch}\n\`\`\`\n\n`);
+                    // Collect relevant diffs
+                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
+
+                    // Collect full content if not already included in comments
+                    if (fileContents[filename] && !fileNamesInComments.has(filename)) {
+                        relevantCode.push(`### Content of ${filename}\n\`\`\`\n${fileContents[filename]}\n\`\`\`\n`);
+                    }
+
+                    core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                } else {
+                    core.info(`File ignored: ${filename} (Status: ${status})`);
                 }
             }
         });
 
-        if (relevantCode.length === 0) {
+        if (relevantDiffs.length === 0 && relevantCode.length === 0) {
             core.warning("No relevant files found to analyze.");
             return;
         }
 
         const sessionId = process.env.GITHUB_RUN_ID;
-        const prompt = `${relevantCode.join('')}\n\n${actionPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        
+        // Create prompts for relevant code and diffs
+        const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n`;
+        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        core.debug(`Generated prompt:\n${prompt}`);
+        const prompt = `${codePrompt}       
+Use the files above to provide context on the changes made in this PR.
+
+${diffsPrompt}
+The diffs above contain the changes made in the PR.
+            
+${actionPrompt}        
+Format your response using Markdown, including appropriate headers and code blocks where relevant.`;
+
+        if (debug) {
+            core.info(`Generated prompt:\n${prompt}`);
+        }
+
+        core.info(`Invoking agent with session ID: ${sessionId}`);
 
         const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
 
-        const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length);
+        if (debug) {
+            core.info(`Agent response:\n${agentResponse}`);
+        }
+
+        core.info(`Posting comment to PR #${prNumber}`);
+
+        const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length);
         await octokit.rest.issues.createComment({
             owner,
             repo,
@@ -64,13 +142,15 @@ async function main() {
             body: commentBody
         });
 
+        core.info(`Comment successfully posted to PR #${prNumber}`);
+
     } catch (error) {
         core.setFailed(error.message);
     }
 }
 
-function formatMarkdownComment(response, prNumber, filesAnalyzed) {
-    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n\n${response}`;
+function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed) {
+    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n${response}`;
 }
 
 main();

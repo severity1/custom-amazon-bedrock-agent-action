@@ -56,6 +56,8 @@ Before using this GitHub Action, you need to complete the following steps:
 | `action_prompt`           | The prompt to send to the Bedrock Agent for analysis.                           | true     | `Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.` |
 | `agent_id`                | The ID of the Bedrock Agent to use.                                             | true     | N/A                                                                                           |
 | `agent_alias_id`          | The alias ID of the Bedrock Agent to use.                                       | true     | N/A                                                                                           |
+| `debug`                   | Enable debug logs for troubleshooting and detailed output.                     | false    | `false`                                                                                       |
+
 
 ## Environment Variables
 
@@ -97,15 +99,14 @@ jobs:
 
             Summary of Changes: Provide a concise summary of the key changes in the Terraform code.
 
-            Summary of Issues and Recommendations: Identify and summarize any issues found in the code, along with corresponding recommendations for each. For each issue, assign a severity (e.g., Critical, High, Medium, Low). If no issues or recommendations are found for a particular category, do not include it in the summary.
-              - Syntax and Formatting: Check for correct HCL syntax, proper Terraform formatting (terraform fmt), and adherence to consistent naming conventions.
-              - Resource Configuration: Evaluate the use of modules, proper resource naming conventions, and the correct use of variables. Highlight any hard-coded values that should be replaced with variables or external data sources.
-              - Security Considerations: Identify potential security risks, such as improper handling of sensitive data, overly permissive IAM policies, lack of encryption, and open ports in security groups.
-              - Best Practices: Verify state management, pinned provider and module versions, resource immutability, and proper use of data sources. Ensure that resources are designed and configured according to Terraform best practices.
-              - Resource Optimization: Suggest improvements for better resource management, including the optimization of resource limits, efficient use of cloud services, and clear dependency management.
-              - Compliance and Governance: Ensure the code adheres to organizational policies, including consistent resource tagging and compliance with industry standards.
-                Testing and Validation: Confirm that changes have been validated with terraform validate or terraform plan, and check for automated tests that accompany new modules or significant changes.
-                Backward Compatibility: Ensure the changes maintain compatibility with existing infrastructure, unless intentionally planned.
+            Summary of Issues and Recommendations: Identify and summarize any issues found in the code, along with corresponding recommendations for each. For each issue, assign a severity (e.g., Critical, High, Medium, Low). If no issues or recommendations are found for a particular category, do not include the category in the summary.
+                - Syntax and Formatting: Check for correct HCL syntax, proper Terraform formatting (terraform fmt), and adherence to consistent naming conventions.
+                - Resource Configuration: Evaluate the use of modules, proper resource naming conventions, and the correct use of variables. Highlight any hard-coded values that should be replaced with variables or external data sources.
+                - Security Considerations: Identify potential security risks, such as improper handling of sensitive data, overly permissive IAM policies, lack of encryption, and open ports in security groups.
+                - Best Practices: Verify state management, pinned provider and module versions, resource immutability, and proper use of data sources. Ensure that resources are designed and configured according to Terraform best practices.
+                - Resource Optimization: Suggest improvements for better resource management, including the optimization of resource limits, efficient use of cloud services, and clear dependency management.
+                - Compliance and Governance: Ensure the code adheres to organizational policies, including consistent resource tagging and compliance with industry standards.
+                - Backward Compatibility: Ensure the changes maintain compatibility with existing infrastructure, unless intentionally planned.
 
             Severity Levels:
                 Critical: Issues that could cause significant security vulnerabilities, major system outages, or data loss. Must be addressed immediately.
@@ -115,6 +116,7 @@ jobs:
 
             No Issues: If no issues are found, simply comment "Looks good to me!".
           ignore_patterns: '**/*.md,docs/**,.github/**'
+          debug: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -126,7 +128,9 @@ jobs:
 ```yaml
 name: Bedrock Analysis
 
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   analyze:
@@ -151,15 +155,14 @@ jobs:
 
             Summary of Changes: Provide a concise summary of the key changes in the Terraform code.
 
-            Summary of Issues and Recommendations: Identify and summarize any issues found in the code, along with corresponding recommendations for each. For each issue, assign a severity (e.g., Critical, High, Medium, Low). If no issues or recommendations are found for a particular category, do not include it in the summary.
-              - Syntax and Formatting: Check for correct HCL syntax, proper Terraform formatting (terraform fmt), and adherence to consistent naming conventions.
-              - Resource Configuration: Evaluate the use of modules, proper resource naming conventions, and the correct use of variables. Highlight any hard-coded values that should be replaced with variables or external data sources.
-              - Security Considerations: Identify potential security risks, such as improper handling of sensitive data, overly permissive IAM policies, lack of encryption, and open ports in security groups.
-              - Best Practices: Verify state management, pinned provider and module versions, resource immutability, and proper use of data sources. Ensure that resources are designed and configured according to Terraform best practices.
-              - Resource Optimization: Suggest improvements for better resource management, including the optimization of resource limits, efficient use of cloud services, and clear dependency management.
-              - Compliance and Governance: Ensure the code adheres to organizational policies, including consistent resource tagging and compliance with industry standards.
-                Testing and Validation: Confirm that changes have been validated with terraform validate or terraform plan, and check for automated tests that accompany new modules or significant changes.
-                Backward Compatibility: Ensure the changes maintain compatibility with existing infrastructure, unless intentionally planned.
+            Summary of Issues and Recommendations: Identify and summarize any issues found in the code, along with corresponding recommendations for each. For each issue, assign a severity (e.g., Critical, High, Medium, Low). If no issues or recommendations are found for a particular category, do not include the category in the summary.
+                - Syntax and Formatting: Check for correct HCL syntax, proper Terraform formatting (terraform fmt), and adherence to consistent naming conventions.
+                - Resource Configuration: Evaluate the use of modules, proper resource naming conventions, and the correct use of variables. Highlight any hard-coded values that should be replaced with variables or external data sources.
+                - Security Considerations: Identify potential security risks, such as improper handling of sensitive data, overly permissive IAM policies, lack of encryption, and open ports in security groups.
+                - Best Practices: Verify state management, pinned provider and module versions, resource immutability, and proper use of data sources. Ensure that resources are designed and configured according to Terraform best practices.
+                - Resource Optimization: Suggest improvements for better resource management, including the optimization of resource limits, efficient use of cloud services, and clear dependency management.
+                - Compliance and Governance: Ensure the code adheres to organizational policies, including consistent resource tagging and compliance with industry standards.
+                - Backward Compatibility: Ensure the changes maintain compatibility with existing infrastructure, unless intentionally planned.
 
             Severity Levels:
                 Critical: Issues that could cause significant security vulnerabilities, major system outages, or data loss. Must be addressed immediately.
@@ -169,7 +172,7 @@ jobs:
 
             No Issues: If no issues are found, simply comment "Looks good to me!".
           ignore_patterns: '**/*.md,docs/**,.github/**'
-          
+          debug: false  
         env:
           AWS_REGION: 'us-east-1'  # Replace with your AWS region
 ```
