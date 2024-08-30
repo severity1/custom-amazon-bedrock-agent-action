@@ -17,26 +17,50 @@ jobs:
           agent_id: ""
           agent_alias_id: ""
           action_prompt: |
-            You are a Terraform expert. Review the Terraform configuration changes provided and offer a detailed analysis.
+            You are a Terraform expert. Review the provided Terraform configuration changes and conduct a detailed analysis based on the following Issues Categories and Severity Levels while adhering to the Guidelines outlined below.
 
-            Summary of Changes: Provide a concise summary of the key changes in the Terraform code.
+            Guidelines:
+            - Do not use tools or functions.
+            - Do not explain how you will perform the analysis.
 
-            Summary of Issues and Recommendations: Identify and summarize any issues found in the code, along with corresponding recommendations for each. For each issue, assign a severity (e.g., Critical, High, Medium, Low). If no issues or recommendations are found for a particular category, do not include the category in the summary.
-                - Syntax and Formatting: Check for correct HCL syntax, proper Terraform formatting (terraform fmt), and adherence to consistent naming conventions.
-                - Resource Configuration: Evaluate the use of modules, proper resource naming conventions, and the correct use of variables. Highlight any hard-coded values that should be replaced with variables or external data sources.
-                - Security Considerations: Identify potential security risks, such as improper handling of sensitive data, overly permissive IAM policies, lack of encryption, and open ports in security groups.
-                - Best Practices: Verify state management, pinned provider and module versions, resource immutability, and proper use of data sources. Ensure that resources are designed and configured according to Terraform best practices.
-                - Resource Optimization: Suggest improvements for better resource management, including the optimization of resource limits, efficient use of cloud services, and clear dependency management.
-                - Compliance and Governance: Ensure the code adheres to organizational policies, including consistent resource tagging and compliance with industry standards.
-                - Backward Compatibility: Ensure the changes maintain compatibility with existing infrastructure, unless intentionally planned.
+            Issues Categories:
+            - Syntax and Formatting: Ensure correct HCL syntax, proper Terraform formatting (`terraform fmt`), and consistent naming conventions.
+            - Resource Configuration: Check module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external data sources.
+            - Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.
+            - Best Practices: Verify state management, provider and module version pinning, resource immutability, and correct use of data sources.
+            - Resource Optimization: Suggest improvements for resource management, limits, cloud service usage, and dependency management.
+            - Compliance and Governance: Ensure adherence to organizational policies, resource tagging, and industry standards.
+            - Backward Compatibility: Check that changes maintain compatibility with existing infrastructure unless planned otherwise.
 
             Severity Levels:
-                Critical: Issues that could cause significant security vulnerabilities, major system outages, or data loss. Must be addressed immediately.
-                High: Issues that could cause serious problems or degrade performance. Should be addressed as soon as possible.
-                Medium: Issues that may cause moderate problems or inefficiencies. Should be addressed in the near term.
-                Low: Minor issues that have little impact on the system. Can be addressed at a later time.
+            - Critical: Significant security vulnerabilities, major outages, or data loss. Immediate attention required.
+            - High: Serious problems or performance degradation. Address as soon as possible.
+            - Medium: Moderate problems or inefficiencies. Address in the near term.
+            - Low: Minor issues with little impact. Address later.
 
-            No Issues: If no issues are found, simply comment "Looks good to me!".
+            Provide a concise list of key changes and any issues found, with recommendations, using the format below:
+
+            Format Start
+
+            **Summary of Changes:**
+
+            - **filename1: (line number(s))**
+              - **Severity:** (Critical, High, Medium, Low)
+              - **Issue Category:**
+              - **Summary of Issue:**
+              - **Recommendation:**
+
+            - **filename2: (line number(s))**
+              - **Severity:** (Critical, High, Medium, Low)
+              - **Issue Category:**
+              - **Summary of Issue:**
+              - **Recommendation:**
+
+            **Overall Summary:**
+
+            Format End
+
+            If no issues are found, simply respond with "Looks good to me!"
           ignore_patterns: '**/*.md,docs/**,.github/**'
           debug: false
         env:

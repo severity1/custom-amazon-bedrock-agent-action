@@ -47,17 +47,15 @@ async function main() {
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
             if (comment.user.login === botUser) {
-                if (comment.body.includes("### Content of")) {
-                    const match = comment.body.match(/### Content of (.+)\n\n```/g);
-                    if (match) {
-                        match.forEach(entry => {
-                            const filename = entry.replace(/### Content of (.+)\n\n```/, '$1').trim();
-                            fileNamesInComments.add(filename);
-                        });
-                    }
+                const regex = /### Content of ([^\n]+)\n\n```/g;
+                let match;
+                while ((match = regex.exec(comment.body)) !== null) {
+                    const filename = match[1].trim();
+                    fileNamesInComments.add(filename);
                 }
             }
         });
+        
 
         const relevantCode = [];
         const relevantDiffs = [];
@@ -81,24 +79,26 @@ async function main() {
         prFiles.forEach(file => {
             const filename = file.filename;
             const status = file.status;
-
+        
             if (status === 'added' || status === 'modified' || status === 'renamed') {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
                 if (!isIgnored) {
-                    // Collect relevant diffs
-                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
-
                     // Collect full content if not already included in comments
                     if (fileContents[filename] && !fileNamesInComments.has(filename)) {
                         relevantCode.push(`### Content of ${filename}\n\`\`\`\n${fileContents[filename]}\n\`\`\`\n`);
+                        core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                    } else {
+                        core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
                     }
 
-                    core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                    // Collect relevant diffs
+                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
                 } else {
                     core.info(`File ignored: ${filename} (Status: ${status})`);
                 }
             }
         });
+        
 
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
             core.warning("No relevant files found to analyze.");
