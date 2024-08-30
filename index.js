@@ -61,7 +61,7 @@ async function main() {
         const prompt = `${relevantCode.join('')}\n\n${actionPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         if (debug) {
-            core.debug(`Generated prompt:\n${prompt}`);
+            core.info(`Generated prompt:\n${prompt}`);
         }
 
         core.info(`Invoking agent with session ID: ${sessionId}`);
@@ -69,7 +69,7 @@ async function main() {
         const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
 
         if (debug) {
-            core.debug(`Agent response:\n${agentResponse}`);
+            core.info(`Agent response:\n${agentResponse}`);
         }
 
         core.info(`Posting comment to PR #${prNumber}`);
