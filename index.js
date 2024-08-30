@@ -56,6 +56,10 @@ async function main() {
             }
         });
 
+        if (debug) {
+            core.info(`Filenames in comment:\n${fileNamesInComments}`);
+        }
+
         const relevantCode = [];
         const relevantDiffs = [];
         const fileContents = {};
