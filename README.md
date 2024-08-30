@@ -164,13 +164,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Assume AWS Role using OIDC
-        uses: aws-actions/configure-aws-credentials@v0.5.0
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::123456789012:role/MyGitHubActionsRole
-          aws-region: 'us-east-1'
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Run Bedrock Analysis
-        uses: severity1/custom-amazon-bedrock-agent-action@v0.3.0
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.5.0 # Replace with your action repository and version
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
