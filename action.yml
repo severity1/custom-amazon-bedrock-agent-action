@@ -1,6 +1,6 @@
-name: 'Custom Amazon Bedrock Agent'
-description: 'A GitHub Action to analyze PR files using Amazon Bedrock Agent.'
-author: 'John Reilly Pospos <johnreilly.pospos@protonmail.com>'
+name: 'Custom Amazon Bedrock Agent Action'
+description: 'This GitHub Action leverages Amazon Bedrock Agent to analyze files in a pull request (PR) and provide feedback. Its designed to be customizable, allowing you to tailor the analysis based on specific requirements and use cases.'
+author: 'John Reilly Pospos <johnreilly.pospos@gmail.com>'
 inputs:
   agent_id:
     description: 'The ID of the Bedrock Agent to use.'
@@ -15,7 +15,7 @@ inputs:
   ignore_patterns:
     description: 'Comma-separated list of glob patterns to ignore (similar to .gitignore).'
     required: true
-    default: '**/*.md,docs/**'
+    default: '**/*.md,docs/**,.github/**'
   logging_level:
     description: 'Logging level for the action. Set to "debug" for detailed logs or "info" for general logs.'
     required: false

@@ -1,4 +1,4 @@
-# Custom Amazon Bedrock Agent
+# Custom Amazon Bedrock Agent Action
 
 ![GitHub Action](https://img.shields.io/badge/Custom%20Bedrock%20Analysis-blue)
 
