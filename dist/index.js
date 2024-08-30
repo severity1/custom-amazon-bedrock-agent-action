@@ -7,8 +7,9 @@
 const { BedrockAgentRuntimeClient, InvokeAgentCommand } = __nccwpck_require__(5628);
 
 class BedrockAgentRuntimeWrapper {
-    constructor(config) {
-        this.client = new BedrockAgentRuntimeClient(config);
+    constructor() {
+        // Initialize the client without explicit config, relying on the default credential provider chain
+        this.client = new BedrockAgentRuntimeClient();
     }
 
     async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
@@ -57619,15 +57620,8 @@ const { BedrockAgentRuntimeWrapper } = __nccwpck_require__(1555);
 // Use GITHUB_TOKEN directly from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
-// Initialize the Bedrock client with the correct configuration
-const bedrockConfig = {
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
-};
-const agentWrapper = new BedrockAgentRuntimeWrapper(bedrockConfig);
+// Initialize the Bedrock client with the default AWS SDK configuration
+const agentWrapper = new BedrockAgentRuntimeWrapper();
 
 async function main() {
     try {

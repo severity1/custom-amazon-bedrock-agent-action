@@ -7,15 +7,8 @@ const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
 // Use GITHUB_TOKEN directly from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
-// Initialize the Bedrock client with the correct configuration
-const bedrockConfig = {
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
-};
-const agentWrapper = new BedrockAgentRuntimeWrapper(bedrockConfig);
+// Initialize the Bedrock client with the default AWS SDK configuration
+const agentWrapper = new BedrockAgentRuntimeWrapper();
 
 async function main() {
     try {

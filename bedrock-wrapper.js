@@ -1,8 +1,9 @@
 const { BedrockAgentRuntimeClient, InvokeAgentCommand } = require("@aws-sdk/client-bedrock-agent-runtime");
 
 class BedrockAgentRuntimeWrapper {
-    constructor(config) {
-        this.client = new BedrockAgentRuntimeClient(config);
+    constructor() {
+        // Initialize the client without explicit config, relying on the default credential provider chain
+        this.client = new BedrockAgentRuntimeClient();
     }
 
     async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
