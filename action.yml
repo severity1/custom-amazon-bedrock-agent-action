@@ -22,7 +22,7 @@ inputs:
     default: 'info'
 
 runs:
-  using: 'node16'
+  using: 'node21'
   main: 'dist/index.js'
 
 branding:
