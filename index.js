@@ -86,11 +86,11 @@ async function main() {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
                 if (!isIgnored) {
                     // Collect relevant diffs
-                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\n\`\`\`diff\n${file.patch}\n\`\`\`\n\n`);
+                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
 
                     // Collect full content if not already included in comments
                     if (fileContents[filename] && !fileNamesInComments.has(filename)) {
-                        relevantCode.push(`### Content of ${filename}\n\n\`\`\`\n${fileContents[filename]}\n\`\`\`\n\n`);
+                        relevantCode.push(`### Content of ${filename}\n\`\`\`\n${fileContents[filename]}\n\`\`\`\n`);
                     }
 
                     core.info(`File added for analysis: ${filename} (Status: ${status})`);
@@ -108,8 +108,8 @@ async function main() {
         const sessionId = process.env.GITHUB_RUN_ID;
         
         // Create prompts for relevant code and diffs
-        const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n\n`;
-        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n\n`;
+        const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n`;
+        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
         const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
