@@ -111,7 +111,17 @@ async function main() {
         const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n`;
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        const prompt = `${codePrompt}
+        
+        Use the files above to provide context on the changes made in this PR.
+
+        ${diffsPrompt}
+
+        THe diffs above contain the changes made in the PR.
+            
+        ${actionPrompt}
+        
+        Format your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         if (debug) {
             core.info(`Generated prompt:\n${prompt}`);
