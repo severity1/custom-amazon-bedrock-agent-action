@@ -1,6 +1,6 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
-const { minimatch } = require('minimatch');
+const minimatch = require('minimatch');
 const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
 
 // Use GITHUB_TOKEN directly from environment variables
