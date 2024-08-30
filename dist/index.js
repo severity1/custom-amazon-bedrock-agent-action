@@ -57670,7 +57670,7 @@ async function main() {
         });
 
         if (debug) {
-            core.info(`Filenames in comment:\n${fileNamesInComments}`);
+            core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
         }
 
         const relevantCode = [];
