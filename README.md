@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Custom Analysis
-        uses: severity1/gazoo@main # Replace with your action repository and version
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.3.0 # Replace with your action repository and version
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
@@ -142,7 +142,7 @@ jobs:
           aws-region: 'us-east-1'
 
       - name: Run Bedrock Analysis
-        uses: your-repo/custom-bedrock-analysis@v1
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.3.0
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
