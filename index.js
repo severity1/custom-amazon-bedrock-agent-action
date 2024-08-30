@@ -55,7 +55,6 @@ async function main() {
                 }
             }
         });
-        
 
         const relevantCode = [];
         const relevantDiffs = [];
@@ -64,6 +63,13 @@ async function main() {
         // Fetch full content for files in the PR
         for (const file of prFiles) {
             const filename = file.filename;
+
+            // Check if this file is already in previous comments
+            if (fileNamesInComments.has(filename)) {
+                core.info(`File ${filename} is already analyzed in previous comments. Skipping content fetch.`);
+                continue;
+            }
+
             const { data: fileContent } = await octokit.rest.repos.getContent({
                 owner,
                 repo,
@@ -79,26 +85,23 @@ async function main() {
         prFiles.forEach(file => {
             const filename = file.filename;
             const status = file.status;
-        
+
             if (status === 'added' || status === 'modified' || status === 'renamed') {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
                 if (!isIgnored) {
+                    // Collect relevant diffs
+                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
+
                     // Collect full content if not already included in comments
                     if (fileContents[filename] && !fileNamesInComments.has(filename)) {
                         relevantCode.push(`### Content of ${filename}\n\`\`\`\n${fileContents[filename]}\n\`\`\`\n`);
                         core.info(`File added for analysis: ${filename} (Status: ${status})`);
-                    } else {
-                        core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
                     }
-
-                    // Collect relevant diffs
-                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
                 } else {
                     core.info(`File ignored: ${filename} (Status: ${status})`);
                 }
             }
         });
-        
 
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
             core.warning("No relevant files found to analyze.");
@@ -106,7 +109,7 @@ async function main() {
         }
 
         const sessionId = process.env.GITHUB_RUN_ID;
-        
+
         // Create prompts for relevant code and diffs
         const codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\n`;
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
