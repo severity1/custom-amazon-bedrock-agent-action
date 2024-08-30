@@ -56,6 +56,8 @@ Before using this GitHub Action, you need to complete the following steps:
 | `action_prompt`           | The prompt to send to the Bedrock Agent for analysis.                           | true     | `Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.` |
 | `agent_id`                | The ID of the Bedrock Agent to use.                                             | true     | N/A                                                                                           |
 | `agent_alias_id`          | The alias ID of the Bedrock Agent to use.                                       | true     | N/A                                                                                           |
+| `debug`                   | Enable debug logs for troubleshooting and detailed output.                     | false    | `false`                                                                                       |
+
 
 ## Environment Variables
 
@@ -115,6 +117,7 @@ jobs:
 
             No Issues: If no issues are found, simply comment "Looks good to me!".
           ignore_patterns: '**/*.md,docs/**,.github/**'
+          debug: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -126,7 +129,9 @@ jobs:
 ```yaml
 name: Bedrock Analysis
 
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   analyze:
@@ -169,7 +174,7 @@ jobs:
 
             No Issues: If no issues are found, simply comment "Looks good to me!".
           ignore_patterns: '**/*.md,docs/**,.github/**'
-          
+          debug: false  
         env:
           AWS_REGION: 'us-east-1'  # Replace with your AWS region
 ```

@@ -15,6 +15,7 @@ async function main() {
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
+        const debug = core.getBooleanInput('debug'); // Read the debug input
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
 
@@ -24,11 +25,15 @@ async function main() {
         }
 
         const [owner, repo] = githubRepository.split('/');
+        core.info(`Processing PR #${prNumber} in repository ${owner}/${repo}`);
+
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
             owner,
             repo,
             pull_number: prNumber
         });
+
+        core.info(`Found ${prFiles.length} files in the pull request`);
 
         const relevantCode = [];
 
@@ -40,6 +45,9 @@ async function main() {
                 const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
                 if (!isIgnored) {
                     relevantCode.push(`File: ${filename} (Status: ${status})\n\n\`\`\`diff\n${file.patch}\n\`\`\`\n\n`);
+                    core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                } else {
+                    core.info(`File ignored: ${filename} (Status: ${status})`);
                 }
             }
         });
@@ -52,9 +60,19 @@ async function main() {
         const sessionId = process.env.GITHUB_RUN_ID;
         const prompt = `${relevantCode.join('')}\n\n${actionPrompt}\n\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
-        core.debug(`Generated prompt:\n${prompt}`);
+        if (debug) {
+            core.debug(`Generated prompt:\n${prompt}`);
+        }
+
+        core.info(`Invoking agent with session ID: ${sessionId}`);
 
         const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
+
+        if (debug) {
+            core.debug(`Agent response:\n${agentResponse}`);
+        }
+
+        core.info(`Posting comment to PR #${prNumber}`);
 
         const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length);
         await octokit.rest.issues.createComment({
@@ -63,6 +81,8 @@ async function main() {
             issue_number: prNumber,
             body: commentBody
         });
+
+        core.info(`Comment successfully posted to PR #${prNumber}`);
 
     } catch (error) {
         core.setFailed(error.message);

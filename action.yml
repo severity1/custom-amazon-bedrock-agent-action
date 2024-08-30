@@ -16,10 +16,10 @@ inputs:
     description: 'Comma-separated list of glob patterns to ignore (similar to .gitignore).'
     required: true
     default: '**/*.md,docs/**,.github/**'
-  logging_level:
-    description: 'Logging level for the action. Set to "debug" for detailed logs or "info" for general logs.'
+  debug:
+    description: 'Enable debug logging'
     required: false
-    default: 'info'
+    default: 'false'
 
 runs:
   using: 'node16'
