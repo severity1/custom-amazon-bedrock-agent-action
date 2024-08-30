@@ -57771,7 +57771,7 @@ function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed,
         .map(file => `- **${file.filename}**: ${file.status}`)
         .join('\n');
 
-    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n### Files in the PR:\n${fileSummary}\n\n${response}`;
+    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n### Affected Files:\n${fileSummary}\n\n${response}`;
 }
 
 // Execute the main function
