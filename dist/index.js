@@ -57660,14 +57660,14 @@ async function main() {
         // Identify files already mentioned in previous comments
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
-            // Use regex to capture filenames mentioned in comments followed by a colon
-            const regex = /\b(\S+?\.\S+)\b:/g;
+            // Use regex to capture filenames mentioned in comments
+            const regex = /\b(\S+\.\S+)\b/g;
             let match;
             while ((match = regex.exec(comment.body)) !== null) {
                 const filename = match[1].trim();
                 fileNamesInComments.add(filename);
             }
-        });
+        });        
 
         if (debug) {
             core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
@@ -57750,7 +57750,7 @@ async function main() {
         core.info(`Posting comment to PR #${prNumber}`);
 
         // Format the response as a Markdown comment and post it to the PR
-        const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length);
+        const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length, prFiles);
         await octokit.rest.issues.createComment({
             owner,
             repo,
@@ -57766,8 +57766,12 @@ async function main() {
 }
 
 // Format the response into a Markdown comment
-function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed) {
-    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n${response}`;
+function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed, prFiles) {
+    const fileSummary = prFiles
+        .map(file => `- **${file.filename}**: ${file.status}`)
+        .join('\n');
+
+    return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n### Files in the PR:\n${fileSummary}\n\n${response}`;
 }
 
 // Execute the main function
