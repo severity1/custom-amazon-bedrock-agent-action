@@ -48,7 +48,7 @@ async function main() {
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
             // Use regex to capture filenames mentioned in comments
-            const regex = /\b(\S+\.\S+)\b/g;
+            const regex = /(?:[\w\/\.\-_\+]+(?:\.\w+)?)(?=[:\s]|$)/g;
             let match;
             while ((match = regex.exec(comment.body)) !== null) {
                 const filename = match[1].trim();
