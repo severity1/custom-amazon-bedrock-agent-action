@@ -95,7 +95,7 @@ async function main() {
         const relevantDiffs = [];
 
         // Process each file in the pull request
-        await Promise.all(prFiles.map(processFile));
+        await Promise.all(prFiles.map(file => processFile(file, allIgnorePatterns, fileNamesInComments, relevantCode, relevantDiffs)));
 
         // Exit early if no relevant files or diffs were found
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
@@ -149,7 +149,7 @@ async function main() {
 }
 
 // Process each file in the pull request
-async function processFile(file) {
+async function processFile(file, allIgnorePatterns, fileNamesInComments, relevantCode, relevantDiffs) {
     const filename = file.filename;
     const status = file.status;
 
@@ -171,8 +171,8 @@ async function processFile(file) {
         try {
             // Fetch the full content of the file
             const { data: fileContent } = await octokit.rest.repos.getContent({
-                owner,
-                repo,
+                owner: file.owner,
+                repo: file.repo,
                 path: filename
             });
 
