@@ -57687,28 +57687,12 @@ async function main() {
             issue_number: prNumber
         });
 
-        // Extract filenames from previous comments to avoid redundant analysis
-        const fileNamesInComments = new Set();
-        comments.forEach(comment => {
-            // Extract filenames from comment bodies using regex
-            const regex = /(?:\b|\/)(\.[\w.-]+|\w+[\w.-]*\.\w+)(?=\b)/g;
-            let match;
-            while ((match = regex.exec(comment.body)) !== null) {
-                const filename = match[1].trim();
-                fileNamesInComments.add(filename);
-            }
-        });
-
-        if (debug) {
-            core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
-        }
-
         // Initialize lists to collect relevant code and diffs
         const relevantCode = [];
         const relevantDiffs = [];
 
         // Process each file in the pull request
-        await Promise.all(prFiles.map(file => processFile(file, allIgnorePatterns, fileNamesInComments, relevantCode, relevantDiffs, owner, repo)));
+        await Promise.all(prFiles.map(file => processFile(file, allIgnorePatterns, comments, relevantCode, relevantDiffs, owner, repo)));
 
         // Exit early if no relevant files or diffs were found
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
@@ -57719,7 +57703,7 @@ async function main() {
         // Use the GitHub run ID as a session ID for invoking the Bedrock agent
         const sessionId = process.env.GITHUB_RUN_ID;
 
-        // Conditionally create codePrompt based if relevantCode is non-empty
+        // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
         if (relevantCode.length > 0) {
             codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
@@ -57762,7 +57746,7 @@ async function main() {
 }
 
 // Process each file in the pull request
-async function processFile(file, allIgnorePatterns, fileNamesInComments, relevantCode, relevantDiffs, owner, repo) {
+async function processFile(file, allIgnorePatterns, comments, relevantCode, relevantDiffs, owner, repo) {
     const filename = file.filename;
     const status = file.status;
 
@@ -57774,8 +57758,8 @@ async function processFile(file, allIgnorePatterns, fileNamesInComments, relevan
             return;
         }
 
-        // Skip files already analyzed
-        if (fileNamesInComments.has(filename)) {
+        // Check if the file's filename is mentioned in any previous comment
+        if (comments.some(comment => comment.body.includes(filename))) {
             core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
             relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
             return;
