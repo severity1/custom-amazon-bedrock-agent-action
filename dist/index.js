@@ -57719,9 +57719,9 @@ async function main() {
         // Use the GitHub run ID as a session ID for invoking the Bedrock agent
         const sessionId = process.env.GITHUB_RUN_ID;
 
-        // Conditionally create codePrompt based on fileNamesInComments
+        // Conditionally create codePrompt based if relevantCode is non-empty
         let codePrompt = '';
-        if (fileNamesInComments.size === 0) {
+        if (relevantCode.length > 0) {
             codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
         }
 
