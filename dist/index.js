@@ -57657,9 +57657,13 @@ async function main() {
         const gitignorePath = __nccwpck_require__.ab + ".gitignore";
         if (fs.existsSync(__nccwpck_require__.ab + ".gitignore")) {
             const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
-            gitignorePatterns = gitignoreContent.split('\n').filter(Boolean);
+            gitignorePatterns = gitignoreContent
+                .split('\n')
+                .map(line => line.trim()) // Trim each line
+                .filter(line => line && !line.startsWith('#')); // Filter out comments and empty lines
+
             if (debug) {
-                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(', ')}`);
+                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(',')}`);
             }
         }
 
