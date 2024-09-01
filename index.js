@@ -1,7 +1,8 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
 const minimatch = require('minimatch');
-const glob = require('@actions/glob');
+const fs = require('fs');
+const path = require('path');
 const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
 
 // Initialize Octokit with the GITHUB_TOKEN from environment variables
@@ -34,22 +35,23 @@ async function main() {
             .split('\n')
             .map(pattern => pattern.trim())
             .filter(pattern => pattern.length > 0);
-        
+
         // Validate each ignore pattern
         ignorePatterns = validatePatterns(ignorePatterns, 'ignore_patterns');
 
-        // Load ignore patterns from .gitignore file
-        const gitIgnoreGlobber = await glob.create('.gitignore', {
-            cwd: process.env.GITHUB_WORKSPACE
-        });
-        const gitIgnorePatterns = (await gitIgnoreGlobber.glob())
-            .map(filePath => filePath.replace(`${process.env.GITHUB_WORKSPACE}/`, ''));
-
-        // Validate .gitignore patterns
-        const validatedGitIgnorePatterns = validatePatterns(gitIgnorePatterns, '.gitignore');
+        // Load and validate patterns from .gitignore
+        const gitignorePath = path.join(process.env.GITHUB_WORKSPACE, '.gitignore');
+        let gitIgnorePatterns = [];
+        if (fs.existsSync(gitignorePath)) {
+            gitIgnorePatterns = fs.readFileSync(gitignorePath, 'utf8')
+                .split('\n')
+                .map(pattern => pattern.trim())
+                .filter(pattern => pattern.length > 0);
+            gitIgnorePatterns = validatePatterns(gitIgnorePatterns, '.gitignore');
+        }
 
         // Combine ignore patterns from input and .gitignore
-        const allIgnorePatterns = [...ignorePatterns, ...validatedGitIgnorePatterns];
+        const allIgnorePatterns = [...ignorePatterns, ...gitIgnorePatterns];
 
         // Fetch files changed in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -92,7 +94,11 @@ async function main() {
 
             // Process files that were added, modified, or renamed
             if (status === 'added' || status === 'modified' || status === 'renamed') {
-                const isIgnored = allIgnorePatterns.some(pattern => minimatch(filename, pattern));
+                const isIgnored = allIgnorePatterns.some(pattern => {
+                    // Convert pattern to glob-style matching
+                    const matchPattern = pattern.endsWith('/') ? `${pattern}**` : pattern;
+                    return minimatch(filename, matchPattern, { matchBase: true });
+                });
 
                 if (!isIgnored) {
                     // Check if the file was already analyzed
