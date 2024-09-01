@@ -1,8 +1,9 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
 const minimatch = require('minimatch');
-const glob = require('@actions/glob');
 const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
+const fs = require('fs');
+const path = require('path');
 
 // Initialize Octokit with the GITHUB_TOKEN from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
@@ -13,6 +14,7 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 async function main() {
     try {
         // Read inputs from the GitHub Actions workflow
+        const ignorePatterns = core.getInput('ignore_patterns').split(',');
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
@@ -29,28 +31,6 @@ async function main() {
         const [owner, repo] = githubRepository.split('/');
         core.info(`Processing PR #${prNumber} in repository ${owner}/${repo}`);
 
-        // Load and validate ignore patterns from the input
-        let ignorePatterns = core.getInput('ignore_patterns')
-            .split('\n')
-            .map(pattern => pattern.trim())
-            .filter(pattern => pattern.length > 0);
-        
-        // Validate each ignore pattern
-        ignorePatterns = validatePatterns(ignorePatterns, 'ignore_patterns');
-
-        // Load ignore patterns from .gitignore file
-        const gitIgnoreGlobber = await glob.create('.gitignore', {
-            cwd: process.env.GITHUB_WORKSPACE
-        });
-        const gitIgnorePatterns = (await gitIgnoreGlobber.glob())
-            .map(filePath => filePath.replace(`${process.env.GITHUB_WORKSPACE}/`, ''));
-
-        // Validate .gitignore patterns
-        const validatedGitIgnorePatterns = validatePatterns(gitIgnorePatterns, '.gitignore');
-
-        // Combine ignore patterns from input and .gitignore
-        const allIgnorePatterns = [...ignorePatterns, ...validatedGitIgnorePatterns];
-
         // Fetch files changed in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
             owner,
@@ -58,6 +38,20 @@ async function main() {
             pull_number: prNumber
         });
         core.info(`Found ${prFiles.length} files in the pull request`);
+
+        // Load `.gitignore` patterns if available
+        let gitignorePatterns = [];
+        const gitignorePath = path.join(process.cwd(), '.gitignore');
+        if (fs.existsSync(gitignorePath)) {
+            const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+            gitignorePatterns = gitignoreContent.split('\n').filter(Boolean);
+            if (debug) {
+                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(', ')}`);
+            }
+        }
+
+        // Combine ignore patterns with .gitignore patterns
+        const allIgnorePatterns = [...ignorePatterns, ...gitignorePatterns];
 
         // Fetch all comments on the pull request
         const { data: comments } = await octokit.rest.issues.listComments({
@@ -68,14 +62,15 @@ async function main() {
 
         // Identify files already mentioned in previous comments
         const fileNamesInComments = new Set();
-        for (const comment of comments) {
+        comments.forEach(comment => {
+            // Use regex to capture filenames mentioned in comments
             const regex = /\b(\S+?\.\S+)\b:/g;
             let match;
             while ((match = regex.exec(comment.body)) !== null) {
                 const filename = match[1].trim();
                 fileNamesInComments.add(filename);
             }
-        }
+        });
 
         if (debug) {
             core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
@@ -137,7 +132,7 @@ async function main() {
         if (fileNamesInComments.size === 0) {
             codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
         }
-        
+
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
         const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
@@ -171,20 +166,6 @@ async function main() {
     } catch (error) {
         core.setFailed(error.message);
     }
-}
-
-// Function to validate patterns
-function validatePatterns(patterns, source) {
-    const validPatterns = [];
-    for (const pattern of patterns) {
-        try {
-            minimatch.makeRe(pattern); // This will throw an error if the pattern is invalid
-            validPatterns.push(pattern);
-        } catch (err) {
-            core.warning(`Invalid pattern in ${source}: ${pattern}. It will be ignored.`);
-        }
-    }
-    return validPatterns;
 }
 
 // Format the response into a Markdown comment

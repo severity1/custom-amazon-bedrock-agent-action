@@ -1,0 +1,56 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+build/
+*.tgz
+
+# Dependency directories
+jspm_packages/
+
+# IDE and editor-specific files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.*.local
+
+# NPM package-lock file
+package-lock.json
+
+# Yarn lock file
+yarn.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Compiled source
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Miscellaneous
+*.swp
+*.swo
+*.swn
+
+# TypeScript build output (if using TypeScript)
+*.js
+*.d.ts
+*.tsbuildinfo
