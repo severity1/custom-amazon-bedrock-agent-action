@@ -31,15 +31,16 @@ async function main() {
         const debug = core.getBooleanInput('debug');
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
+        const prId = github.context.payload.pull_request.id;
 
         // Validate that repository and PR number are available
-        if (!githubRepository || !prNumber) {
+        if (!githubRepository || !prNumber || !prId) {
             core.setFailed("Missing required information to post comment");
             return;
         }
 
         const [owner, repo] = githubRepository.split('/');
-        core.info(`Processing PR #${prNumber} in repository ${owner}/${repo}`);
+        core.info(`Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
 
         // Fetch files changed in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -87,8 +88,8 @@ async function main() {
             return;
         }
 
-        // Use the GitHub run ID as a session ID for invoking the Bedrock agent
-        const sessionId = process.env.GITHUB_RUN_ID;
+        // Combine PR id and number to create a session ID
+        const sessionId = `${prId}-${prNumber}`;
 
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
