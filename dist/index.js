@@ -57618,7 +57618,7 @@ const { BedrockAgentRuntimeWrapper } = __nccwpck_require__(1555);
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
 
-// Initialize Octokit with the GITHUB_TOKEN from environment variables
+// Initialize Octokit with the GitHub token from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
 // Initialize the Bedrock client with the default AWS SDK configuration
@@ -57627,15 +57627,20 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 async function main() {
     try {
         // Read inputs from the GitHub Actions workflow
-        const ignorePatterns = core.getInput('ignore_patterns').split(',');
-        const actionPrompt = core.getInput('action_prompt');
-        const agentId = core.getInput('agent_id');
-        const agentAliasId = core.getInput('agent_alias_id');
+        // Input patterns to ignore and prompts for the agent
+        const ignorePatterns = core.getInput('ignore_patterns')
+            .split(',')
+            .map(pattern => pattern.trim())
+            .filter(Boolean); // Clean up and filter empty patterns
+
+        const actionPrompt = core.getInput('action_prompt').trim();
+        const agentId = core.getInput('agent_id').trim();
+        const agentAliasId = core.getInput('agent_alias_id').trim();
         const debug = core.getBooleanInput('debug');
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
 
-        // Validate necessary information
+        // Validate that repository and PR number are available
         if (!githubRepository || !prNumber) {
             core.setFailed("Missing required information to post comment");
             return;
@@ -57659,8 +57664,8 @@ async function main() {
             const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
             gitignorePatterns = gitignoreContent
                 .split('\n')
-                .map(line => line.trim()) // Trim each line
-                .filter(line => line && !line.startsWith('#')); // Filter out comments and empty lines
+                .map(line => line.trim()) // Remove leading/trailing spaces
+                .filter(line => line && !line.startsWith('#')); // Exclude comments and empty lines
 
             if (debug) {
                 core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(', ')}`);
@@ -57680,7 +57685,7 @@ async function main() {
         // Identify files already mentioned in previous comments
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
-            // Use regex to capture filenames mentioned in comments
+            // Extract filenames from comment bodies using regex
             const regex = /\b(\S+?\.\S+)\b:/g;
             let match;
             while ((match = regex.exec(comment.body)) !== null) {
@@ -57695,33 +57700,34 @@ async function main() {
 
         const relevantCode = [];
         const relevantDiffs = [];
-        const fileContents = {};
 
         // Process each file in the pull request
         for (const file of prFiles) {
             const filename = file.filename;
             const status = file.status;
 
-            // Process files that were added, modified, or renamed
             if (status === 'added' || status === 'modified' || status === 'renamed') {
                 const isIgnored = allIgnorePatterns.some(pattern => minimatch(filename, pattern));
 
                 if (!isIgnored) {
                     // Check if the file was already analyzed
                     if (!fileNamesInComments.has(filename)) {
-                        // Fetch the full content of the file
-                        const { data: fileContent } = await octokit.rest.repos.getContent({
-                            owner,
-                            repo,
-                            path: filename
-                        });
+                        try {
+                            // Fetch the full content of the file
+                            const { data: fileContent } = await octokit.rest.repos.getContent({
+                                owner,
+                                repo,
+                                path: filename
+                            });
 
-                        // Add the file content to the analysis list
-                        if (fileContent && fileContent.type === 'file') {
-                            const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
-                            fileContents[filename] = content;
-                            relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
-                            core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                            if (fileContent && fileContent.type === 'file') {
+                                const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
+                                relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
+                                core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                            }
+                        } catch (error) {
+                            // Log error if content fetching fails
+                            core.error(`Failed to fetch content for file ${filename}: ${error.message}`);
                         }
                     } else {
                         core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
@@ -57781,7 +57787,8 @@ async function main() {
         core.info(`Comment successfully posted to PR #${prNumber}`);
 
     } catch (error) {
-        core.setFailed(error.message);
+        // Log any unexpected errors and fail the action
+        core.setFailed(`Unexpected error: ${error.message}`);
     }
 }
 
