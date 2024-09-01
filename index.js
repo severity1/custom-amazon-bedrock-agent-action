@@ -13,8 +13,13 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 
 async function main() {
     try {
-        // Read inputs from the GitHub Actions workflow
-        // Input patterns to ignore and prompts for the agent
+        // Validate required environment variables
+        if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPOSITORY) {
+            core.setFailed("GITHUB_TOKEN or GITHUB_REPOSITORY environment variable is missing.");
+            return;
+        }
+
+        // Read and validate inputs from the GitHub Actions workflow
         const ignorePatterns = core.getInput('ignore_patterns')
             .split(',')
             .map(pattern => pattern.trim())
@@ -69,7 +74,7 @@ async function main() {
             issue_number: prNumber
         });
 
-        // Identify files already mentioned in previous comments
+        // Extract filenames from previous comments to avoid redundant analysis
         const fileNamesInComments = new Set();
         comments.forEach(comment => {
             // Extract filenames from comment bodies using regex
@@ -85,48 +90,12 @@ async function main() {
             core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
         }
 
+        // Initialize lists to collect relevant code and diffs
         const relevantCode = [];
         const relevantDiffs = [];
 
         // Process each file in the pull request
-        for (const file of prFiles) {
-            const filename = file.filename;
-            const status = file.status;
-
-            if (status === 'added' || status === 'modified' || status === 'renamed') {
-                const isIgnored = allIgnorePatterns.some(pattern => minimatch(filename, pattern));
-
-                if (!isIgnored) {
-                    // Check if the file was already analyzed
-                    if (!fileNamesInComments.has(filename)) {
-                        try {
-                            // Fetch the full content of the file
-                            const { data: fileContent } = await octokit.rest.repos.getContent({
-                                owner,
-                                repo,
-                                path: filename
-                            });
-
-                            if (fileContent && fileContent.type === 'file') {
-                                const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
-                                relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
-                                core.info(`File added for analysis: ${filename} (Status: ${status})`);
-                            }
-                        } catch (error) {
-                            // Log error if content fetching fails
-                            core.error(`Failed to fetch content for file ${filename}: ${error.message}`);
-                        }
-                    } else {
-                        core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
-                    }
-
-                    // Collect diffs (changes) for the file
-                    relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
-                } else {
-                    core.info(`File ignored: ${filename} (Status: ${status})`);
-                }
-            }
-        }
+        await Promise.all(prFiles.map(processFile));
 
         // Exit early if no relevant files or diffs were found
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
@@ -176,6 +145,48 @@ async function main() {
     } catch (error) {
         // Log any unexpected errors and fail the action
         core.setFailed(`Unexpected error: ${error.message}`);
+    }
+}
+
+// Process each file in the pull request
+async function processFile(file) {
+    const filename = file.filename;
+    const status = file.status;
+
+    // Only process added, modified, or renamed files
+    if (['added', 'modified', 'renamed'].includes(status)) {
+        // Skip ignored files
+        if (allIgnorePatterns.some(pattern => minimatch(filename, pattern))) {
+            core.info(`File ignored: ${filename} (Status: ${status})`);
+            return;
+        }
+
+        // Skip files already analyzed
+        if (fileNamesInComments.has(filename)) {
+            core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
+            relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
+            return;
+        }
+
+        try {
+            // Fetch the full content of the file
+            const { data: fileContent } = await octokit.rest.repos.getContent({
+                owner,
+                repo,
+                path: filename
+            });
+
+            if (fileContent?.type === 'file') {
+                const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
+                relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
+                core.info(`File added for analysis: ${filename} (Status: ${status})`);
+            }
+        } catch (error) {
+            core.error(`Failed to fetch content for file ${filename}: ${error.message}`);
+        }
+
+        // Collect diffs (changes) for the file
+        relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
     }
 }
 
