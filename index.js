@@ -1,9 +1,9 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
-const glob = require('@actions/glob');
-const fs = require('fs');
 const minimatch = require('minimatch');
 const { BedrockAgentRuntimeWrapper } = require('./bedrock-wrapper');
+const fs = require('fs');
+const path = require('path');
 
 // Initialize Octokit with the GITHUB_TOKEN from environment variables
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
@@ -14,7 +14,7 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 async function main() {
     try {
         // Read inputs from the GitHub Actions workflow
-        const ignorePatternsInput = core.getInput('ignore_patterns');
+        const ignorePatterns = core.getInput('ignore_patterns').split(',');
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
@@ -40,24 +40,22 @@ async function main() {
         core.info(`Found ${prFiles.length} files in the pull request`);
 
         // Load `.gitignore` patterns from the checked-out repository
-        const gitignoreGlob = await glob.create(`${process.env.GITHUB_WORKSPACE}/.gitignore`);
-        const gitignorePatterns = await gitignoreGlob.glob();
-        let gitignorePatternsList = [];
-        if (gitignorePatterns.length > 0) {
-            const gitignoreContent = fs.readFileSync(gitignorePatterns[0], 'utf-8');
-            gitignorePatternsList = gitignoreContent
+        let gitignorePatterns = [];
+        const gitignorePath = path.join(process.env.GITHUB_WORKSPACE, '.gitignore');
+        if (fs.existsSync(gitignorePath)) {
+            const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+            gitignorePatterns = gitignoreContent
                 .split('\n')
                 .map(line => line.trim()) // Trim each line
                 .filter(line => line && !line.startsWith('#')); // Filter out comments and empty lines
 
             if (debug) {
-                core.info(`Loaded patterns from .gitignore:\n${gitignorePatternsList.join(', ')}`);
+                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(', ')}`);
             }
         }
 
         // Combine ignore patterns with .gitignore patterns
-        const ignorePatterns = ignorePatternsInput.split(',').map(pattern => pattern.trim());
-        const allIgnorePatterns = [...ignorePatterns, ...gitignorePatternsList];
+        const allIgnorePatterns = [...ignorePatterns, ...gitignorePatterns];
 
         // Fetch all comments on the pull request
         const { data: comments } = await octokit.rest.issues.listComments({
