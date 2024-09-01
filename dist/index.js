@@ -55641,6 +55641,14 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 5274:
+/***/ ((module) => {
+
+module.exports = eval("require")("@actions/glob");
+
+
+/***/ }),
+
 /***/ 2209:
 /***/ ((module) => {
 
@@ -57614,6 +57622,7 @@ var __webpack_exports__ = {};
 const core = __nccwpck_require__(4181);
 const github = __nccwpck_require__(2726);
 const minimatch = __nccwpck_require__(6227);
+const glob = __nccwpck_require__(5274);
 const { BedrockAgentRuntimeWrapper } = __nccwpck_require__(1555);
 
 // Initialize Octokit with the GITHUB_TOKEN from environment variables
@@ -57625,7 +57634,6 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 async function main() {
     try {
         // Read inputs from the GitHub Actions workflow
-        const ignorePatterns = core.getInput('ignore_patterns').split(',');
         const actionPrompt = core.getInput('action_prompt');
         const agentId = core.getInput('agent_id');
         const agentAliasId = core.getInput('agent_alias_id');
@@ -57641,6 +57649,28 @@ async function main() {
 
         const [owner, repo] = githubRepository.split('/');
         core.info(`Processing PR #${prNumber} in repository ${owner}/${repo}`);
+
+        // Load and validate ignore patterns from the input
+        let ignorePatterns = core.getInput('ignore_patterns')
+            .split('\n')
+            .map(pattern => pattern.trim())
+            .filter(pattern => pattern.length > 0);
+        
+        // Validate each ignore pattern
+        ignorePatterns = validatePatterns(ignorePatterns, 'ignore_patterns');
+
+        // Load ignore patterns from .gitignore file
+        const gitIgnoreGlobber = await glob.create('.gitignore', {
+            cwd: process.env.GITHUB_WORKSPACE
+        });
+        const gitIgnorePatterns = (await gitIgnoreGlobber.glob())
+            .map(filePath => filePath.replace(`${process.env.GITHUB_WORKSPACE}/`, ''));
+
+        // Validate .gitignore patterns
+        const validatedGitIgnorePatterns = validatePatterns(gitIgnorePatterns, '.gitignore');
+
+        // Combine ignore patterns from input and .gitignore
+        const allIgnorePatterns = [...ignorePatterns, ...validatedGitIgnorePatterns];
 
         // Fetch files changed in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -57659,15 +57689,14 @@ async function main() {
 
         // Identify files already mentioned in previous comments
         const fileNamesInComments = new Set();
-        comments.forEach(comment => {
-            // Use regex to capture filenames mentioned in comments
+        for (const comment of comments) {
             const regex = /\b(\S+?\.\S+)\b:/g;
             let match;
             while ((match = regex.exec(comment.body)) !== null) {
                 const filename = match[1].trim();
                 fileNamesInComments.add(filename);
             }
-        });        
+        }
 
         if (debug) {
             core.info(`Filenames already analyzed in previous comments:\n${Array.from(fileNamesInComments).join(', ')}`);
@@ -57684,7 +57713,7 @@ async function main() {
 
             // Process files that were added, modified, or renamed
             if (status === 'added' || status === 'modified' || status === 'renamed') {
-                const isIgnored = ignorePatterns.some(pattern => minimatch(filename, pattern));
+                const isIgnored = allIgnorePatterns.some(pattern => minimatch(filename, pattern));
 
                 if (!isIgnored) {
                     // Check if the file was already analyzed
@@ -57763,6 +57792,20 @@ async function main() {
     } catch (error) {
         core.setFailed(error.message);
     }
+}
+
+// Function to validate patterns
+function validatePatterns(patterns, source) {
+    const validPatterns = [];
+    for (const pattern of patterns) {
+        try {
+            minimatch.makeRe(pattern); // This will throw an error if the pattern is invalid
+            validPatterns.push(pattern);
+        } catch (err) {
+            core.warning(`Invalid pattern in ${source}: ${pattern}. It will be ignored.`);
+        }
+    }
+    return validPatterns;
 }
 
 // Format the response into a Markdown comment
