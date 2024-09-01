@@ -57652,10 +57652,10 @@ async function main() {
         });
         core.info(`Found ${prFiles.length} files in the pull request`);
 
-        // Load `.gitignore` patterns if available
+        // Load `.gitignore` patterns from the checked-out repository
         let gitignorePatterns = [];
-        const gitignorePath = __nccwpck_require__.ab + ".gitignore";
-        if (fs.existsSync(__nccwpck_require__.ab + ".gitignore")) {
+        const gitignorePath = path.join(process.env.GITHUB_WORKSPACE, '.gitignore');
+        if (fs.existsSync(gitignorePath)) {
             const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
             gitignorePatterns = gitignoreContent
                 .split('\n')
@@ -57663,7 +57663,7 @@ async function main() {
                 .filter(line => line && !line.startsWith('#')); // Filter out comments and empty lines
 
             if (debug) {
-                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(',')}`);
+                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(', ')}`);
             }
         }
 
