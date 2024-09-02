@@ -4,6 +4,8 @@
 /***/ 1555:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+// custom-amazon-bedrock-agent-action/bedrock-wrapper.js
+
 const core = __nccwpck_require__(4181);
 const { BedrockAgentRuntimeClient, InvokeAgentCommand } = __nccwpck_require__(5628);
 
@@ -13,22 +15,23 @@ class BedrockAgentRuntimeWrapper {
         this.client = new BedrockAgentRuntimeClient();
     }
 
-    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
+    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId) {
         const command = new InvokeAgentCommand({
             agentId,
             agentAliasId,
             sessionId,
             inputText: prompt,
             enableTrace: true,
-            ...(memoryId ? { memoryId } : {})
+            memoryId
         });
 
         try {
             let completion = "";
             const response = await this.client.send(command);
             
-            if (response.completion === undefined) {
-                core.error("Error: Completion is undefined");
+            if (!response.completion) {
+                core.error(`[${getTimestamp()}] Error: Completion is undefined`);
+                throw new Error("Completion is undefined");
             }
 
             for await (let chunkEvent of response.completion) {
@@ -39,9 +42,14 @@ class BedrockAgentRuntimeWrapper {
 
             return completion;
         } catch (error) {
-            throw new Error(` Error: Failed to invoke Bedrock agent: ${error}`);
+            core.error(`[${getTimestamp()}] Error: Failed to invoke Bedrock agent: ${error.message}`);
+            throw new Error(`Error: Failed to invoke Bedrock agent: ${error.message}`);
         }
     }
+}
+
+function getTimestamp() {
+    return new Date().toISOString();
 }
 
 module.exports = { BedrockAgentRuntimeWrapper };
