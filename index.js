@@ -112,7 +112,7 @@ async function main() {
         core.info(`Invoking agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
         // Invoke the Bedrock agent with the generated prompt and memory ID
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId, enableTrace);
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, enableTrace);
 
         if (debug) {
             core.info(`Agent response:\n${agentResponse}`);

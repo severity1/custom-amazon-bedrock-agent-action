@@ -12,7 +12,7 @@ class BedrockAgentRuntimeWrapper {
         this.client = new BedrockAgentRuntimeClient();
     }
 
-    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null, enableTrace = false) {
+    async invokeAgent(agentId, agentAliasId, sessionId, prompt, enableTrace = false, memoryId = null) {
         const command = new InvokeAgentCommand({
             agentId,
             agentAliasId,
@@ -57726,7 +57726,7 @@ async function main() {
         core.info(`Invoking agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
         // Invoke the Bedrock agent with the generated prompt and memory ID
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId, enableTrace);
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, enableTrace);
 
         if (debug) {
             core.info(`Agent response:\n${agentResponse}`);
