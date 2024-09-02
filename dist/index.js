@@ -57707,14 +57707,6 @@ async function main() {
         const sessionId = `${prId}-${prNumber}`;
         const memoryId = `${prId}-${prNumber}`;
 
-        // // Check if the agent has a knowledgebase
-        // const knowledgebases = await agentWrapper.getKnowledgebases(agentId, agentAliasId);
-
-        // if (knowledgebases.length === 0) {
-        //     core.info(`[${getTimestamp()}] Agent ${agentId} has no associated knowledgebases.`);
-        // } else {
-        //     core.info(`[${getTimestamp()}] Agent ${agentId} has knowledgebases: ${knowledgebases.join(', ')}`);
-        // }
 
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
@@ -57725,7 +57717,7 @@ async function main() {
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
         // const prompt = `${codePrompt}\n\n${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
-        const prompt = `${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
+        const prompt = `${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
 
         if (debug) {
             core.info(`[${getTimestamp()}] Generated prompt for Bedrock Agent:\n${prompt}`);
