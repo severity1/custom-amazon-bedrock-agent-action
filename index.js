@@ -106,13 +106,13 @@ async function main() {
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
         if (relevantCode.length > 0) {
-            codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
+            codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.\n`;
         }
 
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
-        const prompt = `${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
+        const prompt = `${codePrompt}\n\n${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
+        // const prompt = `${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
 
         if (debug) {
             core.info(`[${getTimestamp()}] Generated prompt for Bedrock Agent:\n${prompt}`);
