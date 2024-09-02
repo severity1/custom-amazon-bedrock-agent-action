@@ -57626,9 +57626,11 @@ const agentWrapper = new BedrockAgentRuntimeWrapper();
 
 async function main() {
     try {
+        core.info(`[${getTimestamp()}] Starting GitHub Action`);
+
         // Validate required environment variables
         if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPOSITORY) {
-            core.setFailed("GITHUB_TOKEN or GITHUB_REPOSITORY environment variable is missing.");
+            core.setFailed("Error: Missing required environment variables: GITHUB_TOKEN or GITHUB_REPOSITORY.");
             return;
         }
 
@@ -57648,12 +57650,12 @@ async function main() {
 
         // Validate that repository and PR number are available
         if (!githubRepository || !prNumber || !prId) {
-            core.setFailed("Missing required information to post comment");
+            core.setFailed("Error: Missing required information to post a comment.");
             return;
         }
 
         const [owner, repo] = githubRepository.split('/');
-        core.info(`Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
+        core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
 
         // Fetch files changed in the pull request
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -57661,7 +57663,7 @@ async function main() {
             repo,
             pull_number: prNumber
         });
-        core.info(`Found ${prFiles.length} files in the pull request`);
+        core.info(`[${getTimestamp()}] Retrieved ${prFiles.length} files from PR #${prNumber}`);
 
         // Load `.gitignore` patterns from the checked-out repository
         let gitignorePatterns = [];
@@ -57674,7 +57676,7 @@ async function main() {
                 .filter(line => line && !line.startsWith('#')); // Exclude comments and empty lines
 
             if (debug) {
-                core.info(`Loaded patterns from .gitignore:\n${gitignorePatterns.join(', ')}`);
+                core.info(`[${getTimestamp()}] Loaded .gitignore patterns:\n${gitignorePatterns.join(', ')}`);
             }
         }
 
@@ -57697,12 +57699,13 @@ async function main() {
 
         // Exit early if no relevant files or diffs were found
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
-            core.warning("No relevant files found to analyze.");
+            core.warning(`[${getTimestamp()}] No relevant files or diffs found for analysis.`);
             return;
         }
 
         // Combine PR id and number to create a session ID
         const sessionId = `${prId}-${prNumber}`;
+        const memoryId = `${prId}-${prNumber}`;
 
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
@@ -57715,19 +57718,19 @@ async function main() {
         const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
 
         if (debug) {
-            core.info(`Generated prompt:\n${prompt}`);
+            core.info(`[${getTimestamp()}] Generated prompt for Bedrock Agent:\n${prompt}`);
         }
 
-        core.info(`Invoking agent with session ID: ${sessionId}`);
+        core.info(`[${getTimestamp()}] Invoking Bedrock Agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
-        // Invoke the Bedrock agent with the generated prompt
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
+        // Invoke the Bedrock agent with the generated prompt and memory ID
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId);
 
         if (debug) {
-            core.info(`Agent response:\n${agentResponse}`);
+            core.info(`[${getTimestamp()}] Bedrock Agent response:\n${agentResponse}`);
         }
 
-        core.info(`Posting comment to PR #${prNumber}`);
+        core.info(`[${getTimestamp()}] Posting analysis comment to PR #${prNumber}`);
 
         // Format the response as a Markdown comment and post it to the PR
         const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length, prFiles);
@@ -57738,11 +57741,11 @@ async function main() {
             body: commentBody
         });
 
-        core.info(`Comment successfully posted to PR #${prNumber}`);
+        core.info(`[${getTimestamp()}] Successfully posted comment to PR #${prNumber}`);
 
     } catch (error) {
         // Log any unexpected errors and fail the action
-        core.setFailed(`Unexpected error: ${error.message}`);
+        core.setFailed(`[${getTimestamp()}] Error: ${error.message}`);
     }
 }
 
@@ -57755,13 +57758,13 @@ async function processFile(file, allIgnorePatterns, comments, relevantCode, rele
     if (['added', 'modified', 'renamed'].includes(status)) {
         // Skip ignored files
         if (allIgnorePatterns.some(pattern => minimatch(filename, pattern))) {
-            core.info(`File ignored: ${filename} (Status: ${status})`);
+            core.info(`[${getTimestamp()}] Skipping ignored file: ${filename} (Status: ${status})`);
             return;
         }
 
         // Check if the file's filename is mentioned in any previous comment
         if (comments.some(comment => comment.body.includes(filename))) {
-            core.info(`File ${filename} is already analyzed in previous comments. Skipping content analysis.`);
+            core.info(`[${getTimestamp()}] Skipping file ${filename} as it is already analyzed in previous comments.`);
             relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
             return;
         }
@@ -57777,10 +57780,10 @@ async function processFile(file, allIgnorePatterns, comments, relevantCode, rele
             if (fileContent?.type === 'file') {
                 const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
                 relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
-                core.info(`File added for analysis: ${filename} (Status: ${status})`);
+                core.info(`[${getTimestamp()}] Added file content for analysis: ${filename} (Status: ${status})`);
             }
         } catch (error) {
-            core.error(`Failed to fetch content for file ${filename}: ${error.message}`);
+            core.error(`[${getTimestamp()}] Error fetching content for file ${filename}: ${error.message}`);
         }
 
         // Collect diffs (changes) for the file
@@ -57795,6 +57798,11 @@ function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed,
         .join('\n');
 
     return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n### Files in the PR:\n${fileSummary}\n\n${response}`;
+}
+
+// Function to format timestamps for logs
+function getTimestamp() {
+    return new Date().toISOString();
 }
 
 // Execute the main function
