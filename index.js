@@ -114,7 +114,7 @@ async function main() {
         const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId);
 
         if (debug) {
-            core.info(`[${getTimestamp()}] Bedrock Agent response:\n${JSON.stringify(agentResponse, null, 2)}`);
+            core.info(`[${getTimestamp()}] Bedrock Agent response:\n${agentResponse}`);
         }
 
         core.info(`[${getTimestamp()}] Posting analysis comment to PR #${prNumber}`);
