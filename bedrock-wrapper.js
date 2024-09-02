@@ -20,7 +20,10 @@ class BedrockAgentRuntimeWrapper {
 
             core.info(`Agent alias details: ${JSON.stringify(response)}`);
 
-            const agentVersion = response.agentAlias.routingConfiguration.agentVersion
+            // Extract the top-level routing configuration
+            const routingConfigurations = response.agentAlias.routingConfiguration || [];
+            const latestRoutingConfiguration = routingConfigurations[0] || {};  // Use the first element, which is the top-level configuration
+            const agentVersion = latestRoutingConfiguration.agentVersion;
 
             if (agentVersion) {
                 core.info(`Agent Version for Alias ID ${agentAliasId}: ${agentVersion}`);
@@ -34,6 +37,7 @@ class BedrockAgentRuntimeWrapper {
             throw new Error(`Failed to get agent version: ${error.message}`);
         }
     }
+
 
     // Method to get the list of enabled knowledgebases associated with the agent
     async getKnowledgebases(agentId, agentAliasId) {
