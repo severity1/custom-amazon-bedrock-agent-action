@@ -1,3 +1,5 @@
+// custom-amazon-bedrock-agent-action/bedrock-wrapper.js
+
 const core = require('@actions/core');
 const { BedrockAgentRuntimeClient, InvokeAgentCommand } = require("@aws-sdk/client-bedrock-agent-runtime");
 
@@ -21,8 +23,9 @@ class BedrockAgentRuntimeWrapper {
             let completion = "";
             const response = await this.client.send(command);
             
-            if (response.completion === undefined) {
-                core.error("Error: Completion is undefined");
+            if (!response.completion) {
+                core.error(`[${getTimestamp()}] Error: Completion is undefined`);
+                throw new Error("Completion is undefined");
             }
 
             for await (let chunkEvent of response.completion) {
@@ -33,9 +36,14 @@ class BedrockAgentRuntimeWrapper {
 
             return completion;
         } catch (error) {
-            throw new Error(` Error: Failed to invoke Bedrock agent: ${error}`);
+            core.error(`[${getTimestamp()}] Error: Failed to invoke Bedrock agent: ${error.message}`);
+            throw new Error(`Error: Failed to invoke Bedrock agent: ${error.message}`);
         }
     }
+}
+
+function getTimestamp() {
+    return new Date().toISOString();
 }
 
 module.exports = { BedrockAgentRuntimeWrapper };
