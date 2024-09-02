@@ -110,6 +110,7 @@ class BedrockAgentRuntimeWrapper {
             const response = await this.runtimeClient.send(command);
     
             if (!response.completion) {
+                core.error(`Invocation response: ${JSON.stringify(response)}`);
                 throw new Error("Completion is undefined in the response.");
             }
     
@@ -123,6 +124,7 @@ class BedrockAgentRuntimeWrapper {
             core.info(`Agent completed the prompt processing with the following completion: "${completion}"`);
             return completion;
         } catch (error) {
+            core.error(`Detailed error information: ${error}`);
             core.error(`Failed to invoke agent with Agent ID ${agentId}: ${error.message}`);
             throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }

@@ -118,8 +118,8 @@ class BedrockAgentRuntimeWrapper {
             core.info(`Agent completed the prompt processing with the following completion: "${completion}"`);
             return completion;
         } catch (error) {
-            core.error(`Failed to invoke agent with Agent ID ${agentId}: ${error.message}`);
             core.error(`Detailed error information: ${error}`);
+            core.error(`Failed to invoke agent with Agent ID ${agentId}: ${error.message}`);
             throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }
     }    
