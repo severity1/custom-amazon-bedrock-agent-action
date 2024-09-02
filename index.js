@@ -94,6 +94,15 @@ async function main() {
         const sessionId = `${prId}-${prNumber}`;
         const memoryId = `${prId}-${prNumber}`;
 
+        // Check if the agent has a knowledgebase
+        const knowledgebases = await agentWrapper.getKnowledgebases(agentId);
+
+        if (knowledgebases.length === 0) {
+            core.info(`[${getTimestamp()}] Agent ${agentId} has no associated knowledgebases.`);
+        } else {
+            core.info(`[${getTimestamp()}] Agent ${agentId} has knowledgebases: ${knowledgebases.join(', ')}`);
+        }
+
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
         if (relevantCode.length > 0) {
