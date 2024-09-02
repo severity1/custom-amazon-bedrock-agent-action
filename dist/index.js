@@ -57812,7 +57812,8 @@ async function main() {
 
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        const prompt = `${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
 
         if (debug) {
             core.info(`[${getTimestamp()}] Generated prompt for Bedrock Agent:\n${prompt}`);
