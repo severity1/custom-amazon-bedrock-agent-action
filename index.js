@@ -92,7 +92,7 @@ async function main() {
 
         // Combine PR id and number to create a session ID
         const sessionId = `${prId}-${prNumber}`;
-        // const memoryId = `${prId}-${prNumber}`;
+        const memoryId = `${prId}-${prNumber}`;
 
         // // Check if the agent has a knowledgebase
         // const knowledgebases = await agentWrapper.getKnowledgebases(agentId, agentAliasId);
@@ -118,10 +118,10 @@ async function main() {
             core.info(`[${getTimestamp()}] Generated prompt for Bedrock Agent:\n${prompt}`);
         }
 
-        core.info(`[${getTimestamp()}] Invoking Bedrock Agent with session ID: ${sessionId}`);
+        core.info(`[${getTimestamp()}] Invoking Bedrock Agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
         // Invoke the Bedrock agent with the generated prompt and memory ID
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId);
 
         if (debug) {
             core.info(`[${getTimestamp()}] Bedrock Agent response:\n${agentResponse}`);

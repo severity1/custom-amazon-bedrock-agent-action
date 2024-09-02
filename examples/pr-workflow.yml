@@ -62,7 +62,7 @@ jobs:
 
             Format End
 
-            If no issues are found, simply respond with "Looks good to me!"
+            If no issues are found, simply respond with Looks good to me!
           ignore_patterns: '**/*.md,docs/**,.github/**'
           debug: false
         env:
