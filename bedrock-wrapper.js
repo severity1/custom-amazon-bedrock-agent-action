@@ -75,7 +75,7 @@ class BedrockAgentRuntimeWrapper {
         try {
             // Fetch knowledgebases associated with the agent
             const knowledgebases = await this.getKnowledgebases(agentId, agentAliasId);
-
+    
             // Prepare knowledgeBaseConfigurations if there are enabled knowledgebases
             const knowledgeBaseConfigurations = knowledgebases.map(kbId => ({
                 knowledgeBaseId: kbId,
@@ -86,15 +86,8 @@ class BedrockAgentRuntimeWrapper {
                     }
                 }
             }));
-
-            core.info(`Preparing to invoke agent with the following details: 
-                Agent ID: ${agentId},
-                Agent Alias ID: ${agentAliasId},
-                Session ID: ${sessionId},
-                Memory ID: ${memoryId ? memoryId : 'None'},
-                Prompt: "${prompt}",
-                Knowledge Base Configurations: ${JSON.stringify(knowledgeBaseConfigurations)}`);
-
+    
+            // Construct command parameters
             const commandParams = {
                 agentId,
                 agentAliasId,
@@ -102,38 +95,41 @@ class BedrockAgentRuntimeWrapper {
                 inputText: prompt,
                 ...(memoryId ? { memoryId } : {}),
                 ...(knowledgeBaseConfigurations.length > 0 ? {
-                    sessionState: {
-                        knowledgeBaseConfigurations: knowledgeBaseConfigurations
-                    }
+                    sessionState: { knowledgeBaseConfigurations }
                 } : {})
             };
-
-            core.info(`Agent invocation params: ${JSON.stringify(commandParams)}`);
-
+    
+            // Log command parameters in chunks
+            const logChunkSize = 2000; // Size of each log chunk
+            const commandParamsString = JSON.stringify(commandParams);
+            for (let i = 0; i < commandParamsString.length; i += logChunkSize) {
+                core.info(`Agent invocation params chunk: ${commandParamsString.substring(i, i + logChunkSize)}`);
+            }
+    
+            // Create and send the command
             const command = new InvokeAgentCommand(commandParams);
-
             const response = await this.runtimeClient.send(command);
-
+    
             core.info(`Agent invocation response received: ${JSON.stringify(response)}`);
-
-            if (response.completion === undefined) {
+    
+            if (!response.completion) {
                 throw new Error("Completion is undefined in the response.");
             }
-
+    
+            // Process completion
             let completion = "";
             for await (let chunkEvent of response.completion) {
                 const chunk = chunkEvent.chunk;
-                const decodedResponse = new TextDecoder("utf-8").decode(chunk.bytes);
-                completion += decodedResponse;
+                completion += new TextDecoder("utf-8").decode(chunk.bytes);
             }
-
+    
             core.info(`Agent completed the prompt processing with the following completion: "${completion}"`);
             return completion;
         } catch (error) {
             core.error(`Failed to invoke agent with Agent ID ${agentId}: ${error.message}`);
             throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }
-    }
+    }        
 }
 
 module.exports = { BedrockAgentRuntimeWrapper };
