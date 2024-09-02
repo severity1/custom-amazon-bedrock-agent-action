@@ -138,7 +138,7 @@ jobs:
             - Medium: Moderate problems or inefficiencies. Address in the near term.
             - Low: Minor issues with little impact. Address later.
 
-            Provide a concise list of key changes and any issues found, with recommendations, using the format below:
+            Provide a concise list of key changes and any issues found, with recommendations using the format below:
 
             Format Start
 
@@ -149,12 +149,14 @@ jobs:
               - **Issue Category:**
               - **Summary of Issue:**
               - **Recommendation:**
+              - **Citation:**
 
             - **filename2: (line number(s))**
               - **Severity:** (Critical, High, Medium, Low)
               - **Issue Category:**
               - **Summary of Issue:**
               - **Recommendation:**
+              - **Citation:**
 
             **Overall Summary:**
 
@@ -218,7 +220,7 @@ jobs:
             - Medium: Moderate problems or inefficiencies. Address in the near term.
             - Low: Minor issues with little impact. Address later.
 
-            Provide a concise list of key changes and any issues found, with recommendations, using the format below:
+            Provide a concise list of key changes and any issues found, with recommendations using the format below:
 
             Format Start
 
@@ -229,12 +231,14 @@ jobs:
               - **Issue Category:**
               - **Summary of Issue:**
               - **Recommendation:**
+              - **Citation:**
 
             - **filename2: (line number(s))**
               - **Severity:** (Critical, High, Medium, Low)
               - **Issue Category:**
               - **Summary of Issue:**
               - **Recommendation:**
+              - **Citation:**
 
             **Overall Summary:**
 

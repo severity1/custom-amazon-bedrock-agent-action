@@ -4,14 +4,17 @@ class BedrockAgentRuntimeWrapper {
     constructor() {
         // Initialize the client without explicit config, relying on the default credential provider chain
         this.client = new BedrockAgentRuntimeClient();
+        // Default to tracing disabled
+        this.enableTrace = false;
     }
 
-    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
+    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null, enableTrace = false) {
         const command = new InvokeAgentCommand({
             agentId,
             agentAliasId,
             sessionId,
             inputText: prompt,
+            ...(enableTrace ? { enableTrace: true } : {}),
             ...(memoryId ? { memoryId } : {})
         });
 

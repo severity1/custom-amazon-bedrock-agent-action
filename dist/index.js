@@ -10,14 +10,17 @@ class BedrockAgentRuntimeWrapper {
     constructor() {
         // Initialize the client without explicit config, relying on the default credential provider chain
         this.client = new BedrockAgentRuntimeClient();
+        // Default to tracing disabled
+        this.enableTrace = false;
     }
 
-    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
+    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null, enableTrace = false) {
         const command = new InvokeAgentCommand({
             agentId,
             agentAliasId,
             sessionId,
             inputText: prompt,
+            ...(enableTrace ? { enableTrace: true } : {}),
             ...(memoryId ? { memoryId } : {})
         });
 
@@ -57642,6 +57645,7 @@ async function main() {
         const agentId = core.getInput('agent_id').trim();
         const agentAliasId = core.getInput('agent_alias_id').trim();
         const debug = core.getBooleanInput('debug');
+        const enableTrace = core.getBooleanInput('enable_trace'); // Read enable_trace input
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
         const prId = github.context.payload.pull_request.id;
@@ -57704,6 +57708,9 @@ async function main() {
         // Combine PR id and number to create a session ID
         const sessionId = `${prId}-${prNumber}`;
 
+        // Generate memoryId based on the session ID
+        const memoryId = `${prId}-${prNumber}`;
+
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
         if (relevantCode.length > 0) {
@@ -57718,10 +57725,10 @@ async function main() {
             core.info(`Generated prompt:\n${prompt}`);
         }
 
-        core.info(`Invoking agent with session ID: ${sessionId}`);
+        core.info(`Invoking agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
-        // Invoke the Bedrock agent with the generated prompt
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
+        // Invoke the Bedrock agent with the generated prompt and memory ID
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId, enableTrace);
 
         if (debug) {
             core.info(`Agent response:\n${agentResponse}`);
