@@ -119,7 +119,6 @@ class BedrockAgentRuntimeWrapper {
             return completion;
         } catch (error) {
             core.error(`Failed to invoke agent with Agent ID ${agentId}: ${error}`);
-            throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }
     }    
 }
