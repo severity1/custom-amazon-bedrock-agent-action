@@ -105,8 +105,6 @@ class BedrockAgentRuntimeWrapper {
                 } : {})
             };
     
-            core.info(`Agent invocation params: ${JSON.stringify(commandParams)}`);
-    
             // Create and send the command
             const command = new InvokeAgentCommand(commandParams);
             const response = await this.runtimeClient.send(command);
