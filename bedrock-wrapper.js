@@ -12,6 +12,7 @@ class BedrockAgentRuntimeWrapper {
             agentAliasId,
             sessionId,
             inputText: prompt,
+            endSession: true,
             ...(memoryId ? { memoryId } : {})
         });
 
