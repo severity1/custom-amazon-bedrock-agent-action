@@ -63582,7 +63582,7 @@ async function main() {
         const memoryId = `${prId}-${prNumber}`;
 
         // Check if the agent has a knowledgebase
-        const knowledgebases = await agentWrapper.getKnowledgebases(agentId, agentVersion);
+        const knowledgebases = await agentWrapper.getKnowledgebases(agentId, agentAliasId);
 
         if (knowledgebases.length === 0) {
             core.info(`[${getTimestamp()}] Agent ${agentId} has no associated knowledgebases.`);
