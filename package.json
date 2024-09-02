@@ -1,6 +1,6 @@
 {
-    "name": "custom-bedrock-analysis",
-    "version": "1.0.0",
+    "name": "custom-amazon-bedrock-agent-action",
+    "version": "0.6.0",
     "description": "Custom Amazon Bedrock Agent for GitHub Actions",
     "main": "index.js",
     "scripts": {
