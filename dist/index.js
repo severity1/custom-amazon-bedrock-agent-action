@@ -57877,7 +57877,7 @@ async function processFile(file, allIgnorePatterns, comments, relevantCode, rele
 
             if (fileContent?.type === 'file') {
                 const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
-                relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
+                relevantCode.push(`File: ${filename}\n\`\`\`\n${content}\n\`\`\`\n\n`);
                 core.info(`[${getTimestamp()}] Added file content for analysis: ${filename} (Status: ${status})`);
             }
         } catch (error) {
