@@ -4,7 +4,29 @@
 
 This GitHub Action leverages [Amazon Bedrock Agent](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html) to analyze files in a pull request (PR) and provide feedback. It's designed to be customizable, allowing you to tailor the analysis based on specific requirements and use cases.
 
-![sequence diagram](docs/sequence_diagram.png)
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+sequenceDiagram
+    participant GHA as GitHub Actions Workflow
+    participant GitHub as GitHub API
+    participant BA as AWS Bedrock Agent
+    note right of BA: Agent pre-configured with Knowledge Base
+
+    GHA->>GHA: Load configuration
+    
+    GHA->>GitHub: Fetch PR files and comments
+    activate GitHub
+    GitHub-->>GHA: Return PR files and comments
+    deactivate GitHub
+    GHA->>GHA: Process files and generate prompt
+    
+    GHA->>BA: Send prompt with session ID for analysis
+    activate BA
+    BA->>BA: Process prompt using pre-integrated knowledge
+    BA-->>GHA: Return analysis results
+    deactivate BA
+    GHA->>GitHub: Post analysis as PR comment
+```
 
 ## Advantages
 - **Tailored Analysis**: You can configure the Bedrock Agent with specific prompts tailored to your organizational standards, compliance needs, or particular security concerns. This flexibility allows for a more customized and relevant analysis compared to generic tools.
