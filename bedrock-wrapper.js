@@ -38,7 +38,6 @@ class BedrockAgentRuntimeWrapper {
         }
     }
 
-
     // Method to get the list of enabled knowledgebases associated with the agent
     async getKnowledgebases(agentId, agentAliasId) {
         try {
@@ -61,11 +60,11 @@ class BedrockAgentRuntimeWrapper {
 
             if (enabledKnowledgebases.length > 0) {
                 core.info(`Enabled knowledgebases found for Agent Alias ID ${agentAliasId}: ${enabledKnowledgebases.join(', ')}`);
+                return enabledKnowledgebases;
             } else {
                 core.info(`No enabled knowledgebases associated with Agent Alias ID ${agentAliasId}`);
+                return [];
             }
-
-            return enabledKnowledgebases;
         } catch (error) {
             core.error(`Failed to fetch knowledgebases for Agent Alias ID ${agentAliasId}: ${error.message}`);
             throw new Error(`Failed to get knowledgebases for agent: ${error.message}`);
@@ -73,23 +72,46 @@ class BedrockAgentRuntimeWrapper {
     }
 
     async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId = null) {
-        core.info(`Preparing to invoke agent with the following details: 
-            Agent ID: ${agentId},
-            Agent Alias ID: ${agentAliasId},
-            Session ID: ${sessionId},
-            Memory ID: ${memoryId ? memoryId : 'None'},
-            Prompt: "${prompt}"`);
-
-        const command = new InvokeAgentCommand({
-            agentId,
-            agentAliasId,
-            sessionId,
-            inputText: prompt,
-            ...(memoryId ? { memoryId } : {})
-        });
-
         try {
+            // Fetch knowledgebases associated with the agent
+            const knowledgebases = await this.getKnowledgebases(agentId, agentAliasId);
+
+            // Prepare knowledgeBaseConfigurations if there are enabled knowledgebases
+            const knowledgeBaseConfigurations = knowledgebases.map(kbId => ({
+                knowledgeBaseId: kbId,
+                retrievalConfiguration: {
+                    vectorSearchConfiguration: {
+                        numberOfResults: 5, // Adjust this as needed
+                        overrideSearchType: "SEMANTIC", // Adjust if needed
+                    }
+                }
+            }));
+
+            core.info(`Preparing to invoke agent with the following details: 
+                Agent ID: ${agentId},
+                Agent Alias ID: ${agentAliasId},
+                Session ID: ${sessionId},
+                Memory ID: ${memoryId ? memoryId : 'None'},
+                Prompt: "${prompt}",
+                Knowledge Base Configurations: ${JSON.stringify(knowledgeBaseConfigurations)}`);
+
+            const commandParams = {
+                agentId,
+                agentAliasId,
+                sessionId,
+                inputText: prompt,
+                ...(memoryId ? { memoryId } : {}),
+                ...(knowledgeBaseConfigurations.length > 0 ? {
+                    sessionState: {
+                        knowledgeBaseConfigurations: knowledgeBaseConfigurations
+                    }
+                } : {})
+            };
+
+            const command = new InvokeAgentCommand(commandParams);
+
             const response = await this.runtimeClient.send(command);
+
             core.info(`Agent invocation response received: ${JSON.stringify(response)}`);
 
             if (response.completion === undefined) {
