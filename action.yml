@@ -16,10 +16,6 @@ inputs:
     description: 'Comma-separated list of glob patterns to ignore (similar to .gitignore).'
     required: true
     default: '**/*.md,docs/**,.github/**'
-  enable_trace:
-    description: 'Enable agent tracing'
-    required: false
-    default: false
   debug:
     description: 'Enable debug logging'
     required: false
