@@ -57811,8 +57811,8 @@ async function main() {
 
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        const prompt = `${codePrompt}\n\n${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
-        // const prompt = `${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
+        // const prompt = `${codePrompt}\n\n${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
+        const prompt = `${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
 
         if (debug) {
             core.info(`[${getTimestamp()}] Generated prompt for Bedrock Agent:\n${prompt}`);
@@ -57876,7 +57876,7 @@ async function processFile(file, allIgnorePatterns, comments, relevantCode, rele
 
             if (fileContent?.type === 'file') {
                 const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
-                relevantCode.push(`File: ${filename}\n\`\`\`\n${content}\n\`\`\`\n\n`);
+                relevantCode.push(`File: ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
                 core.info(`[${getTimestamp()}] Added file content for analysis: ${filename} (Status: ${status})`);
             }
         } catch (error) {
