@@ -87,8 +87,8 @@ class BedrockAgentRuntimeWrapper {
                 knowledgeBaseId: kbId,
                 retrievalConfiguration: {
                     vectorSearchConfiguration: {
-                        numberOfResults: 5, // Adjust this as needed
-                        overrideSearchType: "SEMANTIC", // Adjust if needed
+                        numberOfResults: 5,
+                        overrideSearchType: "SEMANTIC",
                     }
                 }
             }));
@@ -105,18 +105,11 @@ class BedrockAgentRuntimeWrapper {
                 } : {})
             };
     
-            // Log command parameters in chunks
-            const logChunkSize = 2000; // Size of each log chunk
-            const commandParamsString = JSON.stringify(commandParams);
-            for (let i = 0; i < commandParamsString.length; i += logChunkSize) {
-                core.info(`Agent invocation params chunk: ${commandParamsString.substring(i, i + logChunkSize)}`);
-            }
+            core.info(`Agent invocation params: ${JSON.stringify(commandParams)}`);
     
             // Create and send the command
             const command = new InvokeAgentCommand(commandParams);
             const response = await this.runtimeClient.send(command);
-    
-            core.info(`Agent invocation response received: ${JSON.stringify(response)}`);
     
             if (!response.completion) {
                 throw new Error("Completion is undefined in the response.");
@@ -135,7 +128,7 @@ class BedrockAgentRuntimeWrapper {
             core.error(`Failed to invoke agent with Agent ID ${agentId}: ${error.message}`);
             throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
         }
-    }        
+    }    
 }
 
 module.exports = { BedrockAgentRuntimeWrapper };
