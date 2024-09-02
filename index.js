@@ -94,16 +94,24 @@ async function main() {
         const sessionId = `${prId}-${prNumber}`;
         const memoryId = `${prId}-${prNumber}`;
 
+        // // Check if the agent has a knowledgebase
+        // const knowledgebases = await agentWrapper.getKnowledgebases(agentId, agentAliasId);
+
+        // if (knowledgebases.length === 0) {
+        //     core.info(`[${getTimestamp()}] Agent ${agentId} has no associated knowledgebases.`);
+        // } else {
+        //     core.info(`[${getTimestamp()}] Agent ${agentId} has knowledgebases: ${knowledgebases.join(', ')}`);
+        // }
 
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
         if (relevantCode.length > 0) {
-            codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.\n`;
+            codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
         }
 
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}\n`;
 
-        // const prompt = `${codePrompt}\n\n${diffsPrompt}\n\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
+        // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
         const prompt = `${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.\n`;
 
         if (debug) {
@@ -168,7 +176,7 @@ async function processFile(file, allIgnorePatterns, comments, relevantCode, rele
 
             if (fileContent?.type === 'file') {
                 const content = Buffer.from(fileContent.content, 'base64').toString('utf8');
-                relevantCode.push(`File: ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
+                relevantCode.push(`### Content of ${filename}\n\`\`\`\n${content}\n\`\`\`\n`);
                 core.info(`[${getTimestamp()}] Added file content for analysis: ${filename} (Status: ${status})`);
             }
         } catch (error) {
