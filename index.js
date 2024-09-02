@@ -29,6 +29,7 @@ async function main() {
         const agentId = core.getInput('agent_id').trim();
         const agentAliasId = core.getInput('agent_alias_id').trim();
         const debug = core.getBooleanInput('debug');
+        const enableTrace = core.getBooleanInput('enable_trace'); // Read enable_trace input
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
         const prId = github.context.payload.pull_request.id;
@@ -111,7 +112,7 @@ async function main() {
         core.info(`Invoking agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
         // Invoke the Bedrock agent with the generated prompt and memory ID
-        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt);
+        const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, enableTrace);
 
         if (debug) {
             core.info(`Agent response:\n${agentResponse}`);
