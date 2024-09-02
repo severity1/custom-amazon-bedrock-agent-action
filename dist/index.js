@@ -26,7 +26,7 @@ class BedrockAgentRuntimeWrapper {
 
             core.info(`Agent alias details: ${JSON.stringify(response)}`);
 
-            const agentVersion = response.agentAlias?.agentVersion;
+            const agentVersion = response.agentAlias.routingConfiguration.agentVersion
 
             if (agentVersion) {
                 core.info(`Agent Version for Alias ID ${agentAliasId}: ${agentVersion}`);
