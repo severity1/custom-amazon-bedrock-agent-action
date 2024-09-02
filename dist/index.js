@@ -4,6 +4,7 @@
 /***/ 1555:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const core = __nccwpck_require__(4181);
 const { BedrockAgentRuntimeClient, InvokeAgentCommand } = __nccwpck_require__(5628);
 
 class BedrockAgentRuntimeWrapper {
@@ -27,7 +28,7 @@ class BedrockAgentRuntimeWrapper {
             const response = await this.client.send(command);
             
             if (response.completion === undefined) {
-                throw new Error("Completion is undefined");
+                core.error("Error: Completion is undefined");
             }
 
             for await (let chunkEvent of response.completion) {
@@ -38,7 +39,7 @@ class BedrockAgentRuntimeWrapper {
 
             return completion;
         } catch (error) {
-            throw new Error(`Failed to invoke Bedrock agent: ${error.message}`);
+            throw new Error(` Error: Failed to invoke Bedrock agent: ${error}`);
         }
     }
 }
