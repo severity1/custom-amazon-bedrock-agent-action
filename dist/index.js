@@ -21,7 +21,8 @@ class BedrockAgentRuntimeWrapper {
             agentAliasId,
             sessionId,
             inputText: prompt,
-            memoryId
+            memoryId,
+            enableTrace: true,
         });
 
         try {
