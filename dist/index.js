@@ -57747,7 +57747,7 @@ async function main() {
         const prompt = `${actionPrompt}`;
 
         // Validate that the prompt is a valid string
-        if (typeof prompt !== 'string' || prompt.trim() === '') {
+        if (typeof prompt !== 'string') {
             core.setFailed('Error: The generated prompt is not a valid string.');
             return;
         }
