@@ -103,7 +103,8 @@ async function main() {
         const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}`;
 
         // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
-        const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
+        const prompt = `${actionPrompt}`;
 
         // Validate that the prompt is a valid string
         if (typeof prompt !== 'string' || prompt.trim() === '') {
