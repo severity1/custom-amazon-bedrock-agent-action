@@ -104,7 +104,7 @@ async function main() {
 
         // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
         // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
-        const prompt = `${codePrompt}\n${actionPrompt}`;
+        const prompt = `${actionPrompt}`;
 
         // Validate that the prompt is a valid string
         if (typeof prompt !== 'string' || prompt.trim() === '') {
