@@ -15,7 +15,7 @@ class BedrockAgentRuntimeWrapper {
      * @param {string} agentAliasId - The alias ID for the agent.
      * @param {string} sessionId - The session ID for tracking the interaction.
      * @param {string} prompt - The input text to be processed by the agent.
-     * @param {string} memoryId - The memory ID for persisting the session state.
+     * @param {string} [memoryId] - The memory ID for persisting the session state. Optional.
      * @returns {Promise<string>} - The completion response from the agent.
      * @throws {Error} - Throws an error if invocation fails or completion is undefined.
      */
@@ -26,7 +26,7 @@ class BedrockAgentRuntimeWrapper {
             agentAliasId,
             sessionId,
             inputText: prompt,
-            memoryId
+            ...(memoryId && { memoryId }) // Add memoryId only if it's provided
         });
 
         try {

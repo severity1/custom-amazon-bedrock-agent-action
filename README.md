@@ -116,6 +116,7 @@ jobs:
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
+          # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
           action_prompt: |
             You are a Terraform expert. Review the provided Terraform configuration changes and conduct a detailed analysis based on the following Issues Categories and Severity Levels while adhering to the Guidelines outlined below.
 
@@ -198,6 +199,7 @@ jobs:
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
+          # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
           action_prompt: |
             You are a Terraform expert. Review the provided Terraform configuration changes and conduct a detailed analysis based on the following Issues Categories and Severity Levels while adhering to the Guidelines outlined below.
 

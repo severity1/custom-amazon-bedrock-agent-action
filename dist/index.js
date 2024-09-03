@@ -21,7 +21,7 @@ class BedrockAgentRuntimeWrapper {
      * @param {string} agentAliasId - The alias ID for the agent.
      * @param {string} sessionId - The session ID for tracking the interaction.
      * @param {string} prompt - The input text to be processed by the agent.
-     * @param {string} memoryId - The memory ID for persisting the session state.
+     * @param {string} [memoryId] - The memory ID for persisting the session state. Optional.
      * @returns {Promise<string>} - The completion response from the agent.
      * @throws {Error} - Throws an error if invocation fails or completion is undefined.
      */
@@ -32,7 +32,7 @@ class BedrockAgentRuntimeWrapper {
             agentAliasId,
             sessionId,
             inputText: prompt,
-            memoryId
+            ...(memoryId && { memoryId }) // Add memoryId only if it's provided
         });
 
         try {
@@ -57671,6 +57671,7 @@ async function main() {
         const agentId = core.getInput('agent_id').trim();
         const agentAliasId = core.getInput('agent_alias_id').trim();
         const debug = core.getBooleanInput('debug');
+        const memoryId = core.getInput('memory_id').trim() || undefined; // Set memoryId to undefined if input is not provided
         const githubRepository = process.env.GITHUB_REPOSITORY;
         const prNumber = github.context.payload.pull_request.number;
         const prId = github.context.payload.pull_request.id;
@@ -57732,7 +57733,6 @@ async function main() {
 
         // Combine PR id and number to create a session ID
         const sessionId = `${prId}-${prNumber}`;
-        const memoryId = `${prId}-${prNumber}`;
 
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
@@ -57757,7 +57757,7 @@ async function main() {
 
         core.info(`[${getTimestamp()}] Invoking Bedrock Agent with session ID: ${sessionId} and memory ID: ${memoryId}`);
 
-        // Invoke the Bedrock agent with the generated prompt and memory ID
+        // Invoke the Bedrock agent with the generated prompt and memory ID (if provided)
         const agentResponse = await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId);
 
         if (debug) {
