@@ -57737,14 +57737,14 @@ async function main() {
         // Conditionally create codePrompt if relevantCode is non-empty
         let codePrompt = '';
         if (relevantCode.length > 0) {
-            codePrompt = `## Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
+            codePrompt = `Content of Affected Files:\n\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.`;
         }
 
-        const diffsPrompt = `## Relevant Changes to the PR:\n\n${relevantDiffs.join('')}`;
+        const diffsPrompt = `Pull Request Diffs:\n\n${relevantDiffs.join('')}`;
 
         // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
         // const prompt = `${codePrompt}\n${diffsPrompt}\n${actionPrompt}\nFormat your response using Markdown, including appropriate headers and code blocks where relevant.`;
-        const prompt = `${actionPrompt}`;
+        const prompt = `${diffsPrompt}\n$ ${actionPrompt}`;
 
         // Validate that the prompt is a valid string
         if (typeof prompt !== 'string') {
