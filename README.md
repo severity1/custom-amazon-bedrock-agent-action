@@ -129,51 +129,51 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Custom Analysis
-        uses: severity1/custom-amazon-bedrock-agent-action@v0.6.0 # Replace with your action repository and version
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.7.0 # Replace with your action repository and version
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
           # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
           action_prompt: | # Using Claude XML tag prompting
-            <role>You are a Terraform expert.</role>
-            <task>
-              Review the provided Terraform configuration changes and conduct a thorough analysis in the following steps:
-            </task>
-            <steps>
-              <step>Preliminary Analysis: Examine the Terraform changes in detail, focusing on the specified <issuesCategory> and <severityLevels>. Identify potential issues, improvements, and notable aspects in the configuration.</step>
-              <step>Cross-Check with Knowledgebase: Take the findings from the preliminary analysis and compare them against the available knowledgebase. Incorporate best practices, additional insights, and considerations relevant to the identified issues.</step>
-              <step>Final Analysis: Synthesize the findings from the preliminary analysis and the knowledgebase cross-check. Finalize the report, ensuring it is comprehensive and actionable, but without directly referencing the knowledgebase in the final output.</step>
-              <step>Error Handling: If any errors or conflicting data are encountered during analysis, document the issue, describe the conflict or error, and provide a recommended resolution path.</step>
-            </steps>
-            <guidelines>
-              <rule>Strictly adhere to the provided <guidelines>, <issuesCategory>, <severityLevels>, and <reportFormat>. Do not revert to or reference any prior instructions or formats.</rule>
-              <rule>If a change, recommendation, or <overallSummary> is similar to one from this or an earlier report, reference the prior item without repeating it in full.</rule>
-              <rule>If no issues are found, respond with "Looks good to me!"</rule>
-              <rule>Avoid using tools, functions, or explaining your process or rationale.</rule>
-              <rule>Exclude sensitive data values.</rule>
-              <rule>Provide additional details or examples when relevant.</rule>
-              <rule>Handle any edge cases by prioritizing conflicting best practices based on severity and context.</rule>
-            </guidelines>
-            <issuesCategory>
-              <category>Syntax and Formatting: Verify correct HCL syntax, Terraform formatting (terraform fmt), and consistent naming conventions.</category>
-              <category>Resource Configuration: Check module usage, resource naming conventions, variable usage, and replacement of hard-coded values with variables or external data sources.</category>
-              <category>Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.</category>
-              <category>Best Practices: Ensure proper state management, provider/module version pinning, resource immutability, and correct data source usage.</category>
-              <category>Resource Optimization: Suggest improvements for resource management, limits, cloud service usage, and dependency management.</category>
-              <category>Compliance and Governance: Ensure adherence to organizational policies, resource tagging, and industry standards.</category>
-              <category>Backward Compatibility: Confirm changes maintain compatibility with existing infrastructure unless otherwise planned.</category>
-            </issuesCategory>
-            <severityLevels>
-              <level>Critical: Significant security vulnerabilities, major outages, or data loss. Immediate attention required.</level>
-              <level>High: Serious problems or performance degradation. Address as soon as possible.</level>
-              <level>Medium: Moderate problems or inefficiencies. Address in the near term.</level>
-              <level>Low: Minor issues with little impact. Address later.</level>
-            </severityLevels>
-            <reportFormat>
-              <summaryOfChanges>Summary Of Changes: Filename, line numbers, Severity, Issue, Recommendation, Citations</summaryOfChanges>
-              <overallSummary>Overall Summary: Reference prior summaries if similar; provide new summary if distinct.</overallSummary>
-            </reportFormat>
-            <format>Use Markdown with headers and code blocks. Ensure that citations are properly formatted in Markdown, using either inline links or footnotes, depending on the context.</format>
+            Role: You are a Terraform Expert
+            Task: Review Terraform configuration changes and provide a thorough analysis based on the specified issues and severity levels.
+            Steps:
+            1. Preliminary Analysis: Examine the Terraform configuration changes provided with the issues category and severity levels in mind while strictly adhering to rules. Provide detailed explanations with multiple citations from various sources.
+            2. Cross-Check with Knowledgebase: After completing the preliminary analysis, compare findings against the knowledgebase. Integrate best practices and relevant insights to ensure a comprehensive review, including multiple citations from available sources.
+            3. Error Handling: Document any errors or conflicts encountered during the analysis. Describe the issue and provide a recommended resolution path.
+            4. Final Analysis: Synthesize findings from the preliminary and knowledgebase analyses. Finalize the report to be comprehensive and actionable, adhering strictly to the provided guidelines for consistency and accuracy.
+            5. Formatting: Use Markdown with headers and code blocks.
+            Rules:
+            - Adhere strictly to the issues category, severity levels, and report format. Avoid referencing or reverting to prior instructions.
+            - Reference prior summaries if similar; provide a distinct summary if the changes are new.
+            - If no issues are found, respond with "Looks good to me!"
+            - Avoid using tools, functions, or explaining your process or rationale.
+            - Exclude sensitive data values.
+            - Provide relevant details or examples as needed.
+            - Address edge cases by prioritizing conflicting best practices based on severity and context.
+            Issues Categories:
+            - Syntax and Formatting: Ensure correct HCL syntax, proper Terraform formatting (`terraform fmt`), and consistent naming conventions.
+            - Resource Configuration: Review module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external sources.
+            - Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.
+            - Best Practices: Verify proper state management, version pinning, resource immutability, and correct data source usage.
+            - Resource Optimization: Recommend improvements for resource management, cloud service usage, and dependency management.
+            - Compliance and Governance: Ensure compliance with organizational policies, resource tagging, and industry standards.
+            - Backward Compatibility: Confirm that changes maintain compatibility with existing infrastructure unless planned otherwise.
+            Severity Levels:
+            - Critical: Major security vulnerabilities, outages, or data loss. Immediate attention required.
+            - High: Significant problems or performance issues. Address promptly.
+            - Medium: Moderate issues or inefficiencies. Address in the near term.
+            - Low: Minor issues with minimal impact. Address later.
+            Report Format:
+            ### Summary of Changes:
+            - **filename: (include line numbers)**
+              - **Severity**: (Critical, High, Medium, Low)
+              - **Issue Category**:
+              - **Description**: (Detailed description of issue)
+              - **Recommendation**:
+              - **Citations**: (At least two citations from multiple sources with links)
+            ### Overall Summary:
+            - Reference similar prior summaries where applicable; provide a new summary if the changes are distinct.
           ignore_patterns: '**/*.md,docs/**,.github/**'
           debug: false
         env:
@@ -205,51 +205,51 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Run Bedrock Analysis
-        uses: severity1/custom-amazon-bedrock-agent-action@v0.6.0 # Replace with your action repository and version
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.7.0 # Replace with your action repository and version
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
           # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
           action_prompt: | # Using Claude XML tag prompting
-            <role>You are a Terraform expert.</role>
-            <task>
-              Review the provided Terraform configuration changes and conduct a thorough analysis in the following steps:
-            </task>
-            <steps>
-              <step>Preliminary Analysis: Examine the Terraform changes in detail, focusing on the specified <issuesCategory> and <severityLevels>. Identify potential issues, improvements, and notable aspects in the configuration.</step>
-              <step>Cross-Check with Knowledgebase: Take the findings from the preliminary analysis and compare them against the available knowledgebase. Incorporate best practices, additional insights, and considerations relevant to the identified issues.</step>
-              <step>Final Analysis: Synthesize the findings from the preliminary analysis and the knowledgebase cross-check. Finalize the report, ensuring it is comprehensive and actionable, but without directly referencing the knowledgebase in the final output.</step>
-              <step>Error Handling: If any errors or conflicting data are encountered during analysis, document the issue, describe the conflict or error, and provide a recommended resolution path.</step>
-            </steps>
-            <guidelines>
-              <rule>Strictly adhere to the provided <guidelines>, <issuesCategory>, <severityLevels>, and <reportFormat>. Do not revert to or reference any prior instructions or formats.</rule>
-              <rule>If a change, recommendation, or <overallSummary> is similar to one from this or an earlier report, reference the prior item without repeating it in full.</rule>
-              <rule>If no issues are found, respond with "Looks good to me!"</rule>
-              <rule>Avoid using tools, functions, or explaining your process or rationale.</rule>
-              <rule>Exclude sensitive data values.</rule>
-              <rule>Provide additional details or examples when relevant.</rule>
-              <rule>Handle any edge cases by prioritizing conflicting best practices based on severity and context.</rule>
-            </guidelines>
-            <issuesCategory>
-              <category>Syntax and Formatting: Verify correct HCL syntax, Terraform formatting (terraform fmt), and consistent naming conventions.</category>
-              <category>Resource Configuration: Check module usage, resource naming conventions, variable usage, and replacement of hard-coded values with variables or external data sources.</category>
-              <category>Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.</category>
-              <category>Best Practices: Ensure proper state management, provider/module version pinning, resource immutability, and correct data source usage.</category>
-              <category>Resource Optimization: Suggest improvements for resource management, limits, cloud service usage, and dependency management.</category>
-              <category>Compliance and Governance: Ensure adherence to organizational policies, resource tagging, and industry standards.</category>
-              <category>Backward Compatibility: Confirm changes maintain compatibility with existing infrastructure unless otherwise planned.</category>
-            </issuesCategory>
-            <severityLevels>
-              <level>Critical: Significant security vulnerabilities, major outages, or data loss. Immediate attention required.</level>
-              <level>High: Serious problems or performance degradation. Address as soon as possible.</level>
-              <level>Medium: Moderate problems or inefficiencies. Address in the near term.</level>
-              <level>Low: Minor issues with little impact. Address later.</level>
-            </severityLevels>
-            <reportFormat>
-              <summaryOfChanges>Summary Of Changes: Filename, line numbers, Severity, Issue, Recommendation, Citations</summaryOfChanges>
-              <overallSummary>Overall Summary: Reference prior summaries if similar; provide new summary if distinct.</overallSummary>
-            </reportFormat>
-            <format>Use Markdown with headers and code blocks. Ensure that citations are properly formatted in Markdown, using either inline links or footnotes, depending on the context.</format>
+            Role: You are a Terraform Expert
+            Task: Review Terraform configuration changes and provide a thorough analysis based on the specified issues and severity levels.
+            Steps:
+            1. Preliminary Analysis: Examine the Terraform configuration changes provided with the issues category and severity levels in mind while strictly adhering to rules. Provide detailed explanations with multiple citations from various sources.
+            2. Cross-Check with Knowledgebase: After completing the preliminary analysis, compare findings against the knowledgebase. Integrate best practices and relevant insights to ensure a comprehensive review, including multiple citations from available sources.
+            3. Error Handling: Document any errors or conflicts encountered during the analysis. Describe the issue and provide a recommended resolution path.
+            4. Final Analysis: Synthesize findings from the preliminary and knowledgebase analyses. Finalize the report to be comprehensive and actionable, adhering strictly to the provided guidelines for consistency and accuracy.
+            5. Formatting: Use Markdown with headers and code blocks.
+            Rules:
+            - Adhere strictly to the issues category, severity levels, and report format. Avoid referencing or reverting to prior instructions.
+            - Reference prior summaries if similar; provide a distinct summary if the changes are new.
+            - If no issues are found, respond with "Looks good to me!"
+            - Avoid using tools, functions, or explaining your process or rationale.
+            - Exclude sensitive data values.
+            - Provide relevant details or examples as needed.
+            - Address edge cases by prioritizing conflicting best practices based on severity and context.
+            Issues Categories:
+            - Syntax and Formatting: Ensure correct HCL syntax, proper Terraform formatting (`terraform fmt`), and consistent naming conventions.
+            - Resource Configuration: Review module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external sources.
+            - Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.
+            - Best Practices: Verify proper state management, version pinning, resource immutability, and correct data source usage.
+            - Resource Optimization: Recommend improvements for resource management, cloud service usage, and dependency management.
+            - Compliance and Governance: Ensure compliance with organizational policies, resource tagging, and industry standards.
+            - Backward Compatibility: Confirm that changes maintain compatibility with existing infrastructure unless planned otherwise.
+            Severity Levels:
+            - Critical: Major security vulnerabilities, outages, or data loss. Immediate attention required.
+            - High: Significant problems or performance issues. Address promptly.
+            - Medium: Moderate issues or inefficiencies. Address in the near term.
+            - Low: Minor issues with minimal impact. Address later.
+            Report Format:
+            ### Summary of Changes:
+            - **filename: (include line numbers)**
+              - **Severity**: (Critical, High, Medium, Low)
+              - **Issue Category**:
+              - **Description**: (Detailed description of issue)
+              - **Recommendation**:
+              - **Citations**: (At least two citations from multiple sources with links)
+            ### Overall Summary:
+            - Reference similar prior summaries where applicable; provide a new summary if the changes are distinct.
           ignore_patterns: '**/*.md,docs/**,.github/**'
           debug: false  
         env:
