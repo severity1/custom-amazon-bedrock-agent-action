@@ -41,6 +41,7 @@ sequenceDiagram
 
 ## Features
 - **Customizable Agent Analysis**: Leverage Amazon Bedrock Agent's capabilities to analyze PR files according to your specific requirements, benefiting from advanced language models and customizable prompts.
+- **Memory Support**: For compatible models, enable agent memory to maintain context across multiple sessions, allowing for more coherent and contextually aware analyses over time.
 - **Flexible Use Cases**: Adapt the action for various use cases such as code quality improvement, security assessments, performance optimizations, and more, tailored to your project's needs.
 - **File Ignoring**: Define patterns to ignore certain files or directories, similar to `.gitignore`, allowing for focused analysis on relevant files.
 - **Integration with Amazon Bedrock Knowledgebases**: Enhance the agent's capabilities by incorporating domain-specific knowledge through [Amazon Bedrock Knowledgebases](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html), enabling more accurate and context-aware analyses.
@@ -50,6 +51,8 @@ sequenceDiagram
 - **Integration with GitHub Workflows**: Seamlessly incorporate advanced AI-powered code review into your existing GitHub pull request processes, enhancing your development lifecycle.
 - **Markdown-Formatted Comments**: Posts analysis results as a well-formatted comment on the PR.
 
+Here's the updated Prerequisites section of your README, including the information about updating the Agent's Orchestration instruction for use with Associated Knowledgebases:
+
 ## Prerequisites
 
 Before using this GitHub Action, you need to complete the following steps:
@@ -58,7 +61,18 @@ Before using this GitHub Action, you need to complete the following steps:
    
 2. *(Optional)* **Create an Amazon Bedrock Knowledgebase**: For more advanced use cases, you can create an Amazon Bedrock Knowledgebase and associate it with your Bedrock Agent. This allows the agent to leverage a specific set of documents or data during its analysis.
 
-   > **Disclaimer:** Using a [Knowledgebase]((https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html)) can significantly increase your cloud spend. Be sure to monitor usage and costs carefully to avoid unexpected charges.
+   > **Disclaimer:** Using a [Knowledgebase](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html) can significantly increase your cloud spend. Be sure to monitor usage and costs carefully to avoid unexpected charges.
+
+   **Important Note:** To use Agents with Associated Knowledgebases, you need to update the Agent's Orchestration instruction to include something similar below:
+
+   ```
+   $knowledge_base_guideline$ # unchanged lines
+           ... # unchanged lines
+           - Use the knowledge base only if prompted by the user. Otherwise, base your responses on the provided information and available functions.
+           $code_interpreter_guideline$ # unchanged lines
+   ```
+
+   Please note that this has only been tested with Anthropic Foundation Models.
 
 3. **Configure AWS Authentication**: 
 
@@ -72,13 +86,16 @@ Before using this GitHub Action, you need to complete the following steps:
 
 ## Inputs
 
-| Name                      | Description                                                                     | Required | Default                                                                                       |
-|---------------------------|---------------------------------------------------------------------------------|----------|-----------------------------------------------------------------------------------------------|
-| `ignore_patterns`         | Comma-separated list of glob patterns to ignore (similar to `.gitignore`).      | true     | `**/*.md,docs/**`                                                                             |
-| `action_prompt`           | The prompt to send to the Bedrock Agent for analysis.                           | true     | `Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.` |
-| `agent_id`                | The ID of the Bedrock Agent to use.                                             | true     | N/A                                                                                           |
-| `agent_alias_id`          | The alias ID of the Bedrock Agent to use.                                       | true     | N/A                                                                                           |
-| `debug`                   | Enable debug logs for troubleshooting and detailed output.                     | false    | `false`                                                                                       |
+| Name | Description | Required | Default |
+|------|-------------|----------|---------|
+| `agent_id` | The ID of the Bedrock Agent to use. | true | N/A |
+| `agent_alias_id` | The alias ID of the Bedrock Agent to use. | true | N/A |
+| `memory_id` | Enables agents to remember information across multiple sessions. | false | `''` |
+| `action_prompt` | The prompt to send to the Bedrock Agent for analysis. | true | `Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.` |
+| `ignore_patterns` | Comma-separated list of glob patterns to ignore (similar to .gitignore). | true | `**/*.md,docs/**,.github/**` |
+| `debug` | Enable debug logging | false | `false` |
+
+This updated table reflects the inputs specified in your action.yml file, including the new `memory_id` input and the updated default value for `ignore_patterns`.
 
 
 ## Environment Variables
@@ -112,57 +129,51 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Custom Analysis
-        uses: severity1/custom-amazon-bedrock-agent-action@v0.6.0 # Replace with your action repository and version
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.7.0 # Replace with your action repository and version
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
-          action_prompt: |
-            You are a Terraform expert. Review the provided Terraform configuration changes and conduct a detailed analysis based on the following Issues Categories and Severity Levels while adhering to the Guidelines outlined below.
-
-            Guidelines:
-            - Do not use tools or functions.
-            - Do not explain how you will perform the analysis.
-
+          # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
+          action_prompt: | # Using Claude XML tag prompting
+            Role: You are a Terraform Expert
+            Task: Review Terraform configuration changes and provide a thorough analysis based on the specified issues and severity levels.
+            Steps:
+            1. Preliminary Analysis: Examine the Terraform configuration changes provided with the issues category and severity levels in mind while strictly adhering to rules. Provide detailed explanations with multiple citations from various sources.
+            2. Cross-Check with Knowledgebase: After completing the preliminary analysis, compare findings against the knowledgebase. Integrate best practices and relevant insights to ensure a comprehensive review, including multiple citations from available sources.
+            3. Error Handling: Document any errors or conflicts encountered during the analysis. Describe the issue and provide a recommended resolution path.
+            4. Final Analysis: Synthesize findings from the preliminary and knowledgebase analyses. Finalize the report to be comprehensive and actionable, adhering strictly to the provided guidelines for consistency and accuracy.
+            5. Formatting: Use Markdown with headers and code blocks.
+            Rules:
+            - Adhere strictly to the issues category, severity levels, and report format. Avoid referencing or reverting to prior instructions.
+            - Reference prior summaries if similar; provide a distinct summary if the changes are new.
+            - If no issues are found, respond with "Looks good to me!"
+            - Avoid using tools, functions, or explaining your process or rationale.
+            - Exclude sensitive data values.
+            - Provide relevant details or examples as needed.
+            - Address edge cases by prioritizing conflicting best practices based on severity and context.
             Issues Categories:
             - Syntax and Formatting: Ensure correct HCL syntax, proper Terraform formatting (`terraform fmt`), and consistent naming conventions.
-            - Resource Configuration: Check module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external data sources.
+            - Resource Configuration: Review module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external sources.
             - Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.
-            - Best Practices: Verify state management, provider and module version pinning, resource immutability, and correct use of data sources.
-            - Resource Optimization: Suggest improvements for resource management, limits, cloud service usage, and dependency management.
-            - Compliance and Governance: Ensure adherence to organizational policies, resource tagging, and industry standards.
-            - Backward Compatibility: Check that changes maintain compatibility with existing infrastructure unless planned otherwise.
-
+            - Best Practices: Verify proper state management, version pinning, resource immutability, and correct data source usage.
+            - Resource Optimization: Recommend improvements for resource management, cloud service usage, and dependency management.
+            - Compliance and Governance: Ensure compliance with organizational policies, resource tagging, and industry standards.
+            - Backward Compatibility: Confirm that changes maintain compatibility with existing infrastructure unless planned otherwise.
             Severity Levels:
-            - Critical: Significant security vulnerabilities, major outages, or data loss. Immediate attention required.
-            - High: Serious problems or performance degradation. Address as soon as possible.
-            - Medium: Moderate problems or inefficiencies. Address in the near term.
-            - Low: Minor issues with little impact. Address later.
-
-            Provide a concise list of key changes and any issues found, with recommendations using the format below:
-
-            Format Start
-
-            **Summary of Changes:**
-
-            - **filename1: (line number(s))**
-              - **Severity:** (Critical, High, Medium, Low)
-              - **Issue Category:**
-              - **Summary of Issue:**
-              - **Recommendation:**
-              - **Citation:**
-
-            - **filename2: (line number(s))**
-              - **Severity:** (Critical, High, Medium, Low)
-              - **Issue Category:**
-              - **Summary of Issue:**
-              - **Recommendation:**
-              - **Citation:**
-
-            **Overall Summary:**
-
-            Format End
-
-            If no issues are found, simply respond with "Looks good to me!"
+            - Critical: Major security vulnerabilities, outages, or data loss. Immediate attention required.
+            - High: Significant problems or performance issues. Address promptly.
+            - Medium: Moderate issues or inefficiencies. Address in the near term.
+            - Low: Minor issues with minimal impact. Address later.
+            Report Format:
+            ### Summary of Changes:
+            - **filename: (include line numbers)**
+              - **Severity**: (Critical, High, Medium, Low)
+              - **Issue Category**:
+              - **Description**: (Detailed description of issue)
+              - **Recommendation**:
+              - **Citations**: (At least two citations from multiple sources with links)
+            ### Overall Summary:
+            - Reference similar prior summaries where applicable; provide a new summary if the changes are distinct.
           ignore_patterns: '**/*.md,docs/**,.github/**'
           debug: false
         env:
@@ -194,57 +205,51 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Run Bedrock Analysis
-        uses: severity1/custom-amazon-bedrock-agent-action@v0.6.0 # Replace with your action repository and version
+        uses: severity1/custom-amazon-bedrock-agent-action@v0.7.0 # Replace with your action repository and version
         with:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
-          action_prompt: |
-            You are a Terraform expert. Review the provided Terraform configuration changes and conduct a detailed analysis based on the following Issues Categories and Severity Levels while adhering to the Guidelines outlined below.
-
-            Guidelines:
-            - Do not use tools or functions.
-            - Do not explain how you will perform the analysis.
-
+          # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
+          action_prompt: | # Using Claude XML tag prompting
+            Role: You are a Terraform Expert
+            Task: Review Terraform configuration changes and provide a thorough analysis based on the specified issues and severity levels.
+            Steps:
+            1. Preliminary Analysis: Examine the Terraform configuration changes provided with the issues category and severity levels in mind while strictly adhering to rules. Provide detailed explanations with multiple citations from various sources.
+            2. Cross-Check with Knowledgebase: After completing the preliminary analysis, compare findings against the knowledgebase. Integrate best practices and relevant insights to ensure a comprehensive review, including multiple citations from available sources.
+            3. Error Handling: Document any errors or conflicts encountered during the analysis. Describe the issue and provide a recommended resolution path.
+            4. Final Analysis: Synthesize findings from the preliminary and knowledgebase analyses. Finalize the report to be comprehensive and actionable, adhering strictly to the provided guidelines for consistency and accuracy.
+            5. Formatting: Use Markdown with headers and code blocks.
+            Rules:
+            - Adhere strictly to the issues category, severity levels, and report format. Avoid referencing or reverting to prior instructions.
+            - Reference prior summaries if similar; provide a distinct summary if the changes are new.
+            - If no issues are found, respond with "Looks good to me!"
+            - Avoid using tools, functions, or explaining your process or rationale.
+            - Exclude sensitive data values.
+            - Provide relevant details or examples as needed.
+            - Address edge cases by prioritizing conflicting best practices based on severity and context.
             Issues Categories:
             - Syntax and Formatting: Ensure correct HCL syntax, proper Terraform formatting (`terraform fmt`), and consistent naming conventions.
-            - Resource Configuration: Check module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external data sources.
+            - Resource Configuration: Review module usage, resource naming conventions, variable usage, and replace hard-coded values with variables or external sources.
             - Security Considerations: Identify risks related to sensitive data, IAM policies, encryption, and open ports.
-            - Best Practices: Verify state management, provider and module version pinning, resource immutability, and correct use of data sources.
-            - Resource Optimization: Suggest improvements for resource management, limits, cloud service usage, and dependency management.
-            - Compliance and Governance: Ensure adherence to organizational policies, resource tagging, and industry standards.
-            - Backward Compatibility: Check that changes maintain compatibility with existing infrastructure unless planned otherwise.
-
+            - Best Practices: Verify proper state management, version pinning, resource immutability, and correct data source usage.
+            - Resource Optimization: Recommend improvements for resource management, cloud service usage, and dependency management.
+            - Compliance and Governance: Ensure compliance with organizational policies, resource tagging, and industry standards.
+            - Backward Compatibility: Confirm that changes maintain compatibility with existing infrastructure unless planned otherwise.
             Severity Levels:
-            - Critical: Significant security vulnerabilities, major outages, or data loss. Immediate attention required.
-            - High: Serious problems or performance degradation. Address as soon as possible.
-            - Medium: Moderate problems or inefficiencies. Address in the near term.
-            - Low: Minor issues with little impact. Address later.
-
-            Provide a concise list of key changes and any issues found, with recommendations using the format below:
-
-            Format Start
-
-            **Summary of Changes:**
-
-            - **filename1: (line number(s))**
-              - **Severity:** (Critical, High, Medium, Low)
-              - **Issue Category:**
-              - **Summary of Issue:**
-              - **Recommendation:**
-              - **Citation:**
-
-            - **filename2: (line number(s))**
-              - **Severity:** (Critical, High, Medium, Low)
-              - **Issue Category:**
-              - **Summary of Issue:**
-              - **Recommendation:**
-              - **Citation:**
-
-            **Overall Summary:**
-
-            Format End
-
-            If no issues are found, simply respond with "Looks good to me!"
+            - Critical: Major security vulnerabilities, outages, or data loss. Immediate attention required.
+            - High: Significant problems or performance issues. Address promptly.
+            - Medium: Moderate issues or inefficiencies. Address in the near term.
+            - Low: Minor issues with minimal impact. Address later.
+            Report Format:
+            ### Summary of Changes:
+            - **filename: (include line numbers)**
+              - **Severity**: (Critical, High, Medium, Low)
+              - **Issue Category**:
+              - **Description**: (Detailed description of issue)
+              - **Recommendation**:
+              - **Citations**: (At least two citations from multiple sources with links)
+            ### Overall Summary:
+            - Reference similar prior summaries where applicable; provide a new summary if the changes are distinct.
           ignore_patterns: '**/*.md,docs/**,.github/**'
           debug: false  
         env:
