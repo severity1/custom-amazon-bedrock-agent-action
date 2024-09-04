@@ -41,6 +41,7 @@ sequenceDiagram
 
 ## Features
 - **Customizable Agent Analysis**: Leverage Amazon Bedrock Agent's capabilities to analyze PR files according to your specific requirements, benefiting from advanced language models and customizable prompts.
+- **Memory Support**: For compatible models, enable agent memory to maintain context across multiple sessions, allowing for more coherent and contextually aware analyses over time.
 - **Flexible Use Cases**: Adapt the action for various use cases such as code quality improvement, security assessments, performance optimizations, and more, tailored to your project's needs.
 - **File Ignoring**: Define patterns to ignore certain files or directories, similar to `.gitignore`, allowing for focused analysis on relevant files.
 - **Integration with Amazon Bedrock Knowledgebases**: Enhance the agent's capabilities by incorporating domain-specific knowledge through [Amazon Bedrock Knowledgebases](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html), enabling more accurate and context-aware analyses.
@@ -50,6 +51,8 @@ sequenceDiagram
 - **Integration with GitHub Workflows**: Seamlessly incorporate advanced AI-powered code review into your existing GitHub pull request processes, enhancing your development lifecycle.
 - **Markdown-Formatted Comments**: Posts analysis results as a well-formatted comment on the PR.
 
+Here's the updated Prerequisites section of your README, including the information about updating the Agent's Orchestration instruction for use with Associated Knowledgebases:
+
 ## Prerequisites
 
 Before using this GitHub Action, you need to complete the following steps:
@@ -58,7 +61,18 @@ Before using this GitHub Action, you need to complete the following steps:
    
 2. *(Optional)* **Create an Amazon Bedrock Knowledgebase**: For more advanced use cases, you can create an Amazon Bedrock Knowledgebase and associate it with your Bedrock Agent. This allows the agent to leverage a specific set of documents or data during its analysis.
 
-   > **Disclaimer:** Using a [Knowledgebase]((https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html)) can significantly increase your cloud spend. Be sure to monitor usage and costs carefully to avoid unexpected charges.
+   > **Disclaimer:** Using a [Knowledgebase](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html) can significantly increase your cloud spend. Be sure to monitor usage and costs carefully to avoid unexpected charges.
+
+   **Important Note:** To use Agents with Associated Knowledgebases, you need to update the Agent's Orchestration instruction to include something similar below:
+
+   ```
+   $knowledge_base_guideline$ # unchanged lines
+           ... # unchanged lines
+           - Use the knowledge base only if prompted by the user. Otherwise, base your responses on the provided information and available functions.
+           $code_interpreter_guideline$ # unchanged lines
+   ```
+
+   Please note that this has only been tested with Anthropic Foundation Models.
 
 3. **Configure AWS Authentication**: 
 
@@ -72,13 +86,16 @@ Before using this GitHub Action, you need to complete the following steps:
 
 ## Inputs
 
-| Name                      | Description                                                                     | Required | Default                                                                                       |
-|---------------------------|---------------------------------------------------------------------------------|----------|-----------------------------------------------------------------------------------------------|
-| `ignore_patterns`         | Comma-separated list of glob patterns to ignore (similar to `.gitignore`).      | true     | `**/*.md,docs/**`                                                                             |
-| `action_prompt`           | The prompt to send to the Bedrock Agent for analysis.                           | true     | `Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.` |
-| `agent_id`                | The ID of the Bedrock Agent to use.                                             | true     | N/A                                                                                           |
-| `agent_alias_id`          | The alias ID of the Bedrock Agent to use.                                       | true     | N/A                                                                                           |
-| `debug`                   | Enable debug logs for troubleshooting and detailed output.                     | false    | `false`                                                                                       |
+| Name | Description | Required | Default |
+|------|-------------|----------|---------|
+| `agent_id` | The ID of the Bedrock Agent to use. | true | N/A |
+| `agent_alias_id` | The alias ID of the Bedrock Agent to use. | true | N/A |
+| `memory_id` | Enables agents to remember information across multiple sessions. | false | `''` |
+| `action_prompt` | The prompt to send to the Bedrock Agent for analysis. | true | `Given the relevant code changes above, provide a detailed analysis including potential improvements and security considerations.` |
+| `ignore_patterns` | Comma-separated list of glob patterns to ignore (similar to .gitignore). | true | `**/*.md,docs/**,.github/**` |
+| `debug` | Enable debug logging | false | `false` |
+
+This updated table reflects the inputs specified in your action.yml file, including the new `memory_id` input and the updated default value for `ignore_patterns`.
 
 
 ## Environment Variables
