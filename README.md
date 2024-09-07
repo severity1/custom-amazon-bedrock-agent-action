@@ -1,4 +1,4 @@
-# Custom Amazon Bedrock Agent GitHub Action
+# Custom Amazon Bedrock Agent Action
 
 ![GitHub Action](https://img.shields.io/badge/Custom%20Bedrock%20Analysis-blue)
 
@@ -47,63 +47,83 @@ sequenceDiagram
 
 ## Prerequisites
 
-1. **Create an Amazon Bedrock Agent**  
-   Set up an [Amazon Bedrock Agent](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html) with a custom system prompt to guide its analysis.
+Before using this GitHub Action, you need to complete the following steps:
 
-2. **(Optional) Create an Amazon Bedrock Knowledgebase**  
-   For advanced use cases, associate a Knowledgebase with your agent to leverage domain-specific knowledge. Monitor cloud usage to avoid unexpected costs.
+1. **Create an Amazon Bedrock Agent**: Set up an [Amazon Bedrock Agent](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html) in your AWS account. This involves configuring the agent with a system prompt that defines the foundational behavior and knowledge base the agent will use during analysis.
+   
+2. *(Optional)* **Create an Amazon Bedrock Knowledgebase**: For more advanced use cases, you can create an Amazon Bedrock Knowledgebase and associate it with your Bedrock Agent. This allows the agent to leverage a specific set of documents or data during its analysis.
 
-   **Important Note:** Update the agent’s orchestration instruction for knowledgebase usage:
-   ```yaml
-   $knowledge_base_guideline$
-   - Use the knowledge base only if prompted by the user.
-   $code_interpreter_guideline$
+   > **Disclaimer:** Using a [Knowledgebase](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html) can significantly increase your cloud spend. Be sure to monitor usage and costs carefully to avoid unexpected charges.
+
+   > **Important Note:** To use Agents with Associated Knowledgebases, you need to update the Agent's Orchestration instruction to include something similar below:
+
+   ```
+   $knowledge_base_guideline$ # unchanged lines
+           ... # unchanged lines
+           - Use the knowledge base only if prompted by the user. Otherwise, base your responses on the provided information and available functions.
+           $code_interpreter_guideline$ # unchanged lines
    ```
 
-3. **Configure AWS Authentication**  
-   Authenticate via one of the following methods:
-   - **AWS Credentials**: Use AWS credentials as GitHub Secrets.
-   - **GitHub OIDC**: Configure [GitHub OpenID Connect (OIDC)](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services) for secure IAM role assumption without long-term credentials.
+   Please note that this has only been tested with Anthropic Foundation Models.
 
-   #### IAM Role Configuration
-   **Permissions**: 
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Sid": "InvokeAgentAccess",
-         "Effect": "Allow",
-         "Action": "bedrock:InvokeAgent",
-         "Resource": "*"
-       }
-     ]
-   }
-   ```
+3. **Configure AWS Authentication**: You have two options to authenticate with AWS:
 
-   **Trust Policy**:
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Principal": {
-           "Federated": "arn:aws:iam::<your-account-id>:oidc-provider/token.actions.githubusercontent.com"
-         },
-         "Action": "sts:AssumeRoleWithWebIdentity",
-         "Condition": {
-           "StringEquals": {
-             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-           },
-           "StringLike": {
-             "token.actions.githubusercontent.com:sub": "repo:<org/username>/<your-repo-name>:*"
-           }
-         }
-       }
-     ]
-   }
-   ```
+   - **AWS Credentials**: Ensure you have the necessary AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`) configured as GitHub Secrets in your repository. These credentials will allow the GitHub Action to communicate with the Amazon Bedrock Agent.
+
+   - **GitHub OpenID Connect (OIDC)**: Consider using GitHub OIDC to authenticate with AWS. This method allows you to securely assume an IAM role in your AWS account without needing to store long-term AWS credentials as secrets. For more information on configuring GitHub OIDC, refer to [Configuring OpenID Connect in Amazon Web Services](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services).
+
+     > **Tip:** Using GitHub OIDC can enhance security by reducing the need for managing and rotating secrets. It also streamlines the authentication process for your GitHub Actions.
+
+     #### IAM Role Permissions and Trust Policy
+
+     To securely invoke the Amazon Bedrock agent using GitHub OIDC, follow these steps to configure the IAM Role with a narrowly scoped permission and trust policy:
+
+     **1. IAM Role Permissions**  
+     Restrict the role's permissions to only allow invoking Amazon Bedrock agents using the `bedrock:InvokeAgent` actions:
+
+     ```json
+     {
+         "Version": "2012-10-17",
+         "Statement": [
+             {
+                 "Sid": "InvokeAgentAccess",
+                 "Effect": "Allow",
+                 "Action": "bedrock:InvokeAgent",
+                 "Resource": "*"
+             }
+         ]
+     }
+     ```
+     > **Note:** It's recommended to further narrow the resource scope for the bedrock:InvokeAgent action by specifying specific Amazon Bedrock Agent resources. This ensures that the role only has access to the intended Bedrock agents and improves security.
+
+     **2. Trust Policy**  
+     Add the following trust policy to allow GitHub Actions to assume the role using OIDC:
+
+     ```json
+     {
+         "Version": "2012-10-17",
+         "Statement": [
+             {
+                 "Effect": "Allow",
+                 "Principal": {
+                     "Federated": "arn:aws:iam::<your-account-id>:oidc-provider/token.actions.githubusercontent.com"
+                 },
+                 "Action": "sts:AssumeRoleWithWebIdentity",
+                 "Condition": {
+                     "StringEquals": {
+                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                     },
+                     "StringLike": {
+                         "token.actions.githubusercontent.com:sub": "repo:<org/username>/<your-repo-name>:*"
+                     }
+                 }
+             }
+         ]
+     }
+     ```
+
+     - Replace `<your-account-id>` with your AWS Account ID.
+     - Replace `<org/username>` and `<your-repo-name>` with your GitHub organization or username and repository name.
 
 ## Inputs
 
