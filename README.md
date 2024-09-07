@@ -173,7 +173,7 @@ jobs:
           agent_id: 'your-agent-id'
           agent_alias_id: 'your-agent-alias-id'
           # memory_id: 'terraform-expert-memory' # Titan Models are not supported.
-          action_prompt: | # Using Claude XML tag prompting
+          action_prompt: |
             Role: You are a Terraform Expert
             Task: Review Terraform configuration changes and provide a thorough analysis based on the specified issues and severity levels.
             Steps:
