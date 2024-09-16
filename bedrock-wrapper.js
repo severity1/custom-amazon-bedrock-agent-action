@@ -16,19 +16,29 @@ class BedrockAgentRuntimeWrapper {
      * @param {string} sessionId - The session ID for tracking the interaction.
      * @param {string} prompt - The input text to be processed by the agent.
      * @param {string} [memoryId] - The memory ID for persisting the session state. Optional.
+     * @param {boolean} [endSession=false] - Whether to end the session after this invocation. Optional.
      * @returns {Promise<string>} - The completion response from the agent.
      * @throws {Error} - Throws an error if invocation fails or completion is undefined.
      */
-    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId) {
+    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId, endSession = false) {
+        // Ensure endSession is a boolean
+        endSession = !!endSession;
+    
         // Create a new command to invoke the agent
-        const command = new InvokeAgentCommand({
+        const commandParams = {
             agentId,
             agentAliasId,
             sessionId,
             inputText: prompt,
-            ...(memoryId && { memoryId }) // Add memoryId only if it's provided
-        });
-
+            ...(memoryId && { memoryId }), // Add memoryId only if it's provided
+            endSession // Set endSession if true
+        };
+    
+        // Debug log the parameters before sending
+        core.debug(`[${getTimestamp()}] Command parameters: ${JSON.stringify(commandParams)}`);
+    
+        const command = new InvokeAgentCommand(commandParams);
+    
         try {
             let completion = "";
             // Send the command to the Bedrock agent client and await the response
@@ -39,7 +49,7 @@ class BedrockAgentRuntimeWrapper {
                 core.error(`[${getTimestamp()}] Error: Completion is undefined`);
                 throw new Error("Completion is undefined");
             }
-
+    
             // Process each chunk of the completion response
             for await (let chunkEvent of response.completion) {
                 const chunk = chunkEvent.chunk;
@@ -47,14 +57,19 @@ class BedrockAgentRuntimeWrapper {
                 const decodedResponse = new TextDecoder("utf-8").decode(chunk.bytes);
                 completion += decodedResponse;
             }
-
+    
+            // Log if the session was ended
+            if (endSession) {
+                core.info(`[${getTimestamp()}] Session ended successfully for agent ${agentId}, session ${sessionId}`);
+            }
+    
             return completion;
         } catch (error) {
             // Log error and throw a new error if invocation fails
             core.error(`[${getTimestamp()}] Error: Failed to invoke Bedrock agent: ${error.message}`);
             throw new Error(`Error: Failed to invoke Bedrock agent: ${error.message}`);
         }
-    }
+    } 
 }
 
 // Utility function to get the current timestamp in ISO format

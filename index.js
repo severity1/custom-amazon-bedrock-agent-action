@@ -20,6 +20,9 @@ async function main() {
             return;
         }
 
+        // Extract payload from GitHub context
+        const payload = github.context.payload;
+
         // Parse inputs from the GitHub Action workflow
         const ignorePatterns = core.getInput('ignore_patterns')
             .split(',').map(pattern => pattern.trim()).filter(Boolean);
@@ -32,7 +35,7 @@ async function main() {
 
         // Extract PR information from the GitHub context
         const { GITHUB_REPOSITORY: githubRepository } = process.env;
-        const { number: prNumber, id: prId } = github.context.payload.pull_request;
+        const { number: prNumber, id: prId } = payload.pull_request;
 
         if (!githubRepository || !prNumber || !prId) {
             core.setFailed("Error: Missing required PR information.");
@@ -42,6 +45,16 @@ async function main() {
         // Parse repository owner and name
         const [owner, repo] = githubRepository.split('/');
         core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
+
+        // Generate a unique session ID for the PR
+        const sessionId = `${prId}-${prNumber}`;
+
+        // Check if the PR is being closed or merged
+        const action = payload.action;
+        if (action === 'closed') {
+            await handleClosedPR(agentId, agentAliasId, sessionId);
+            return;
+        }
 
         // Fetch the list of files changed in the PR
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -81,9 +94,6 @@ async function main() {
             return;
         }
 
-        // Generate a unique session ID for the PR
-        const sessionId = `${prId}-${prNumber}`;
-
         // Prepare the prompt for the Bedrock Agent
         const diffsPrompt = `Pull Request Diffs:\n${relevantDiffs.join('')}`;
         const prompt = relevantCode.length
@@ -120,6 +130,19 @@ async function main() {
         core.setFailed(`[${getTimestamp()}] Error: ${error.message}`);
     }
 }
+
+async function handleClosedPR(agentId, agentAliasId, sessionId) {
+    const endSession = true; // Set to true if you want to end the session
+    const prompt = "Goodbye.";
+    try {
+        core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
+        await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, undefined, endSession);
+        core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
+    } catch (error) {
+        core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);
+    }
+}
+
 
 // Process each file in the PR to check if it should be analyzed
 async function processFile(file, ignorePatterns, comments, relevantCode, relevantDiffs, owner, repo) {
