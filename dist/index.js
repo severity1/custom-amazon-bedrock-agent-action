@@ -76,6 +76,7 @@ class BedrockAgentRuntimeWrapper {
             agentId,
             agentAliasId,
             sessionId,
+            inputText: "Good bye!",
             endSession: true
         });
 
