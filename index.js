@@ -20,6 +20,13 @@ async function main() {
             return;
         }
 
+        // Extract event type and payload from GitHub context
+        const eventType = github.context.eventName;
+        const payload = github.context.payload;
+
+        core.info(`[${getTimestamp()}] GitHub event type: ${eventType}`);
+        core.info(`[${getTimestamp()}] GitHub event payload: ${JSON.stringify(payload, null, 2)}`);
+
         // Parse inputs from the GitHub Action workflow
         const ignorePatterns = core.getInput('ignore_patterns')
             .split(',').map(pattern => pattern.trim()).filter(Boolean);
@@ -45,9 +52,6 @@ async function main() {
 
         // Generate a unique session ID for the PR
         const sessionId = `${prId}-${prNumber}`;
-
-        core.info(`[${getTimestamp()}] GitHub event: ${github.context.eventName}`);
-        core.info(`[${getTimestamp()}] GitHub payload: ${JSON.stringify(github.context.payload, null, 2)}`);
 
         // Fetch the list of files changed in the PR
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -121,17 +125,6 @@ async function main() {
         core.info(`[${getTimestamp()}] Successfully posted comment to PR #${prNumber}`);
     } catch (error) {
         core.setFailed(`[${getTimestamp()}] Error: ${error.message}`);
-    }
-}
-
-// Handle closed PR
-async function handleClosedPR(agentId, sessionId) {
-    try {
-        core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
-        await agentWrapper.endSession(agentId, sessionId);
-        core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
-    } catch (error) {
-        core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);
     }
 }
 
