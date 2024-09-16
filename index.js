@@ -43,6 +43,16 @@ async function main() {
         const [owner, repo] = githubRepository.split('/');
         core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
 
+        // Generate a unique session ID for the PR
+        const sessionId = `${prId}-${prNumber}`;
+
+        // Check if the PR is being closed or merged
+        const action = github.context.payload.action;
+        if (action === 'closed') {
+            await handleClosedPR(agentId, sessionId);
+            return;
+        }
+
         // Fetch the list of files changed in the PR
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
             owner, repo, pull_number: prNumber
@@ -81,9 +91,6 @@ async function main() {
             return;
         }
 
-        // Generate a unique session ID for the PR
-        const sessionId = `${prId}-${prNumber}`;
-
         // Prepare the prompt for the Bedrock Agent
         const diffsPrompt = `Pull Request Diffs:\n${relevantDiffs.join('')}`;
         const prompt = relevantCode.length
@@ -118,6 +125,17 @@ async function main() {
         core.info(`[${getTimestamp()}] Successfully posted comment to PR #${prNumber}`);
     } catch (error) {
         core.setFailed(`[${getTimestamp()}] Error: ${error.message}`);
+    }
+}
+
+// Handle closed PR
+async function handleClosedPR(agentId, sessionId) {
+    try {
+        core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
+        await agentWrapper.endSession(agentId, sessionId);
+        core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
+    } catch (error) {
+        core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);
     }
 }
 
