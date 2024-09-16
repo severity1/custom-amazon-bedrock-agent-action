@@ -134,7 +134,7 @@ async function main() {
 async function handleClosedPR(agentId, agentAliasId, sessionId) {
     try {
         core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
-        await agentWrapper.endSession(agentId, agentAliasId, sessionId);
+        await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, endSession = true);
         core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
     } catch (error) {
         core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);

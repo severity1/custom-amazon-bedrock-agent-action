@@ -5,7 +5,7 @@
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(4181);
-const { BedrockAgentRuntimeClient, InvokeAgentCommand, EndSessionCommand } = __nccwpck_require__(5628);
+const { BedrockAgentRuntimeClient, InvokeAgentCommand } = __nccwpck_require__(5628);
 
 // Wrapper class for interacting with Bedrock Agent Runtime
 class BedrockAgentRuntimeWrapper {
@@ -22,17 +22,22 @@ class BedrockAgentRuntimeWrapper {
      * @param {string} sessionId - The session ID for tracking the interaction.
      * @param {string} prompt - The input text to be processed by the agent.
      * @param {string} [memoryId] - The memory ID for persisting the session state. Optional.
+     * @param {boolean} [endSession=false] - Whether to end the session after this invocation. Optional.
      * @returns {Promise<string>} - The completion response from the agent.
      * @throws {Error} - Throws an error if invocation fails or completion is undefined.
      */
-    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId) {
+    async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId, endSession = false) {
+        // Determine the input text based on the endSession flag
+        const inputText = endSession ? "Goodbye." : prompt;
+
         // Create a new command to invoke the agent
         const command = new InvokeAgentCommand({
             agentId,
             agentAliasId,
             sessionId,
-            inputText: prompt,
-            ...(memoryId && { memoryId }) // Add memoryId only if it's provided
+            inputText,
+            ...(memoryId && { memoryId }), // Add memoryId only if it's provided
+            endSession // Set endSession if true
         });
 
         try {
@@ -54,40 +59,16 @@ class BedrockAgentRuntimeWrapper {
                 completion += decodedResponse;
             }
 
+            // Log if the session was ended
+            if (endSession) {
+                core.info(`[${getTimestamp()}] Session ended successfully for agent ${agentId}, session ${sessionId}`);
+            }
+
             return completion;
         } catch (error) {
             // Log error and throw a new error if invocation fails
             core.error(`[${getTimestamp()}] Error: Failed to invoke Bedrock agent: ${error.message}`);
             throw new Error(`Error: Failed to invoke Bedrock agent: ${error.message}`);
-        }
-    }
-
-    /**
-     * Ends a session with a Bedrock agent.
-     * 
-     * @param {string} agentId - The ID of the Bedrock agent.
-     * @param {string} agentAliasId - The alias ID for the agent.
-     * @param {string} sessionId - The session ID to end.
-     * @throws {Error} - Throws an error if ending the session fails.
-     */
-    async endSession(agentId, agentAliasId, sessionId) {
-        // Create a new command to end the session
-        const command = new InvokeAgentCommand({
-            agentId,
-            agentAliasId,
-            sessionId,
-            inputText: "Good bye!",
-            endSession: true
-        });
-
-        try {
-            // Send the command to the Bedrock agent client and await the response
-            await this.client.send(command);
-            core.info(`[${getTimestamp()}] Session ended successfully for agent ${agentId}, session ${sessionId}`);
-        } catch (error) {
-            // Log error and throw a new error if ending the session fails
-            core.error(`[${getTimestamp()}] Error: Failed to end session with Bedrock agent: ${error.message}`);
-            throw new Error(`Error: Failed to end session with Bedrock agent: ${error.message}`);
         }
     }
 }
@@ -99,6 +80,7 @@ function getTimestamp() {
 
 // Export the wrapper class for use in other modules
 module.exports = { BedrockAgentRuntimeWrapper };
+
 
 /***/ }),
 
@@ -57802,7 +57784,7 @@ async function main() {
 async function handleClosedPR(agentId, agentAliasId, sessionId) {
     try {
         core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
-        await agentWrapper.endSession(agentId, agentAliasId, sessionId);
+        await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, endSession = true);
         core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
     } catch (error) {
         core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);
