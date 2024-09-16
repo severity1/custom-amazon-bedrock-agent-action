@@ -48,9 +48,20 @@ async function main() {
 
         // Check if the PR is being closed or merged
         const action = github.context.payload.action;
+        core.info(`Action detected: ${action}`);  // Log the detected action
+
+        if (github.context.payload.pull_request) {
+            core.info('Pull request details detected.');
+        } else {
+            core.error('Error: No pull request details detected in payload.');
+        }
+
         if (action === 'closed') {
+            core.info('PR is closed. Triggering handleClosedPR logic.');  // Add this log to confirm closure logic
             await handleClosedPR(agentId, sessionId);
             return;
+        } else {
+            core.info('PR is not closed, continuing normal flow.');
         }
 
         // Fetch the list of files changed in the PR
