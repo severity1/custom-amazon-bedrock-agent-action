@@ -133,14 +133,16 @@ async function main() {
 
 async function handleClosedPR(agentId, agentAliasId, sessionId) {
     const endSession = true; // Set to true if you want to end the session
+    const prompt = "Goodbye.";
     try {
         core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
-        await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, endSession);
+        await agentWrapper.invokeAgent(agentId, agentAliasId, sessionId, prompt, undefined, endSession);
         core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
     } catch (error) {
         core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);
     }
 }
+
 
 // Process each file in the PR to check if it should be analyzed
 async function processFile(file, ignorePatterns, comments, relevantCode, relevantDiffs, owner, repo) {
