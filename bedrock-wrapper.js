@@ -1,5 +1,5 @@
 const core = require('@actions/core');
-const { BedrockAgentRuntimeClient, InvokeAgentCommand } = require("@aws-sdk/client-bedrock-agent-runtime");
+const { BedrockAgentRuntimeClient, InvokeAgentCommand, EndSessionCommand } = require("@aws-sdk/client-bedrock-agent-runtime");
 
 // Wrapper class for interacting with Bedrock Agent Runtime
 class BedrockAgentRuntimeWrapper {
@@ -53,6 +53,31 @@ class BedrockAgentRuntimeWrapper {
             // Log error and throw a new error if invocation fails
             core.error(`[${getTimestamp()}] Error: Failed to invoke Bedrock agent: ${error.message}`);
             throw new Error(`Error: Failed to invoke Bedrock agent: ${error.message}`);
+        }
+    }
+
+    /**
+     * Ends a session with a Bedrock agent.
+     * 
+     * @param {string} agentId - The ID of the Bedrock agent.
+     * @param {string} sessionId - The session ID to end.
+     * @throws {Error} - Throws an error if ending the session fails.
+     */
+    async endSession(agentId, sessionId) {
+        // Create a new command to end the session
+        const command = new EndSessionCommand({
+            agentId,
+            sessionId
+        });
+
+        try {
+            // Send the command to the Bedrock agent client and await the response
+            await this.client.send(command);
+            core.info(`[${getTimestamp()}] Session ended successfully for agent ${agentId}, session ${sessionId}`);
+        } catch (error) {
+            // Log error and throw a new error if ending the session fails
+            core.error(`[${getTimestamp()}] Error: Failed to end session with Bedrock agent: ${error.message}`);
+            throw new Error(`Error: Failed to end session with Bedrock agent: ${error.message}`);
         }
     }
 }
