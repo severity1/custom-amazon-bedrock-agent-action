@@ -20,8 +20,7 @@ async function main() {
             return;
         }
 
-        // Extract event type and payload from GitHub context
-        const eventType = github.context.eventName;
+        // Extract payload from GitHub context
         const payload = github.context.payload;
 
         // Parse inputs from the GitHub Action workflow
@@ -53,7 +52,7 @@ async function main() {
         // Check if the PR is being closed or merged
         const action = payload.action;
         if (action === 'closed') {
-            await handleClosedPR(agentId, sessionId);
+            await handleClosedPR(agentId, agentAliasId, sessionId);
             return;
         }
 
@@ -132,10 +131,10 @@ async function main() {
     }
 }
 
-async function handleClosedPR(agentId, sessionId) {
+async function handleClosedPR(agentId, agentAliasId, sessionId) {
     try {
         core.info(`[${getTimestamp()}] PR is being closed or merged. Ending Bedrock Agent session.`);
-        await agentWrapper.endSession(agentId, sessionId);
+        await agentWrapper.endSession(agentId, agentAliasId, sessionId);
         core.info(`[${getTimestamp()}] Successfully ended Bedrock Agent session for PR.`);
     } catch (error) {
         core.error(`[${getTimestamp()}] Error ending Bedrock Agent session: ${error.message}`);

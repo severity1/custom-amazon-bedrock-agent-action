@@ -60,14 +60,16 @@ class BedrockAgentRuntimeWrapper {
      * Ends a session with a Bedrock agent.
      * 
      * @param {string} agentId - The ID of the Bedrock agent.
+     * @param {string} agentAliasId - The alias ID for the agent.
      * @param {string} sessionId - The session ID to end.
      * @throws {Error} - Throws an error if ending the session fails.
      */
-    async endSession(agentId, sessionId) {
+    async endSession(agentId, agentAliasId, sessionId) {
         // Create a new command to end the session
-        const command = new EndSessionCommand({
+        const command = new InvokeAgentCommand({
             agentId,
-            sessionId
+            agentAliasId,
+            endSession: true
         });
 
         try {
