@@ -39,7 +39,7 @@ async function main() {
 
         // Extract PR information from the GitHub context
         const { GITHUB_REPOSITORY: githubRepository } = process.env;
-        const { number: prNumber, id: prId } = github.context.payload.pull_request;
+        const { number: prNumber, id: prId } = payload.pull_request;
 
         if (!githubRepository || !prNumber || !prId) {
             core.setFailed("Error: Missing required PR information.");

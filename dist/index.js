@@ -5,7 +5,7 @@
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(4181);
-const { BedrockAgentRuntimeClient, InvokeAgentCommand } = __nccwpck_require__(5628);
+const { BedrockAgentRuntimeClient, InvokeAgentCommand, EndSessionCommand } = __nccwpck_require__(5628);
 
 // Wrapper class for interacting with Bedrock Agent Runtime
 class BedrockAgentRuntimeWrapper {
@@ -61,6 +61,31 @@ class BedrockAgentRuntimeWrapper {
             throw new Error(`Error: Failed to invoke Bedrock agent: ${error.message}`);
         }
     }
+
+    /**
+     * Ends a session with a Bedrock agent.
+     * 
+     * @param {string} agentId - The ID of the Bedrock agent.
+     * @param {string} sessionId - The session ID to end.
+     * @throws {Error} - Throws an error if ending the session fails.
+     */
+    async endSession(agentId, sessionId) {
+        // Create a new command to end the session
+        const command = new EndSessionCommand({
+            agentId,
+            sessionId
+        });
+
+        try {
+            // Send the command to the Bedrock agent client and await the response
+            await this.client.send(command);
+            core.info(`[${getTimestamp()}] Session ended successfully for agent ${agentId}, session ${sessionId}`);
+        } catch (error) {
+            // Log error and throw a new error if ending the session fails
+            core.error(`[${getTimestamp()}] Error: Failed to end session with Bedrock agent: ${error.message}`);
+            throw new Error(`Error: Failed to end session with Bedrock agent: ${error.message}`);
+        }
+    }
 }
 
 // Utility function to get the current timestamp in ISO format
@@ -70,7 +95,6 @@ function getTimestamp() {
 
 // Export the wrapper class for use in other modules
 module.exports = { BedrockAgentRuntimeWrapper };
-
 
 /***/ }),
 
@@ -57660,6 +57684,13 @@ async function main() {
             return;
         }
 
+        // Extract event type and payload from GitHub context
+        const eventType = github.context.eventName;
+        const payload = github.context.payload;
+
+        core.info(`[${getTimestamp()}] GitHub event type: ${eventType}`);
+        core.info(`[${getTimestamp()}] GitHub event payload: ${JSON.stringify(payload, null, 2)}`);
+
         // Parse inputs from the GitHub Action workflow
         const ignorePatterns = core.getInput('ignore_patterns')
             .split(',').map(pattern => pattern.trim()).filter(Boolean);
@@ -57682,6 +57713,9 @@ async function main() {
         // Parse repository owner and name
         const [owner, repo] = githubRepository.split('/');
         core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
+
+        // Generate a unique session ID for the PR
+        const sessionId = `${prId}-${prNumber}`;
 
         // Fetch the list of files changed in the PR
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
@@ -57720,9 +57754,6 @@ async function main() {
             core.warning(`[${getTimestamp()}] No relevant files or diffs found for analysis.`);
             return;
         }
-
-        // Generate a unique session ID for the PR
-        const sessionId = `${prId}-${prNumber}`;
 
         // Prepare the prompt for the Bedrock Agent
         const diffsPrompt = `Pull Request Diffs:\n${relevantDiffs.join('')}`;
