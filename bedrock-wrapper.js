@@ -21,18 +21,26 @@ class BedrockAgentRuntimeWrapper {
      * @throws {Error} - Throws an error if invocation fails or completion is undefined.
      */
     async invokeAgent(agentId, agentAliasId, sessionId, prompt, memoryId, endSession = false) {
+        // Ensure endSession is a boolean
+        endSession = !!endSession;
+
         // Determine the input text based on the endSession flag
         const inputText = endSession ? "Goodbye." : prompt;
 
         // Create a new command to invoke the agent
-        const command = new InvokeAgentCommand({
+        const commandParams = {
             agentId,
             agentAliasId,
             sessionId,
             inputText,
             ...(memoryId && { memoryId }), // Add memoryId only if it's provided
             endSession // Set endSession if true
-        });
+        };
+
+        // Debug log the parameters before sending
+        core.debug(`[${getTimestamp()}] Command parameters: ${JSON.stringify(commandParams)}`);
+
+        const command = new InvokeAgentCommand(commandParams);
 
         try {
             let completion = "";
