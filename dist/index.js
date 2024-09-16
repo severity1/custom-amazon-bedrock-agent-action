@@ -75,6 +75,7 @@ class BedrockAgentRuntimeWrapper {
         const command = new InvokeAgentCommand({
             agentId,
             agentAliasId,
+            sessionId,
             endSession: true
         });
 
