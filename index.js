@@ -46,23 +46,8 @@ async function main() {
         // Generate a unique session ID for the PR
         const sessionId = `${prId}-${prNumber}`;
 
-        // Check if the PR is being closed or merged
-        const action = github.context.payload.action;
-        core.info(`Action detected: ${action}`);  // Log the detected action
-
-        if (github.context.payload.pull_request) {
-            core.info('Pull request details detected.');
-        } else {
-            core.error('Error: No pull request details detected in payload.');
-        }
-
-        if (action === 'closed') {
-            core.info('PR is closed. Triggering handleClosedPR logic.');  // Add this log to confirm closure logic
-            await handleClosedPR(agentId, sessionId);
-            return;
-        } else {
-            core.info('PR is not closed, continuing normal flow.');
-        }
+        core.info(`[${getTimestamp()}] GitHub event: ${github.context.eventName}`);
+        core.info(`[${getTimestamp()}] GitHub payload: ${JSON.stringify(github.context.payload, null, 2)}`);
 
         // Fetch the list of files changed in the PR
         const { data: prFiles } = await octokit.rest.pulls.listFiles({
