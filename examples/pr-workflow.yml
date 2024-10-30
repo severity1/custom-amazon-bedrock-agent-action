@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches:
+      - '**' # Match any branch
 
 env:
   AWS_REGION: 'us-east-1'

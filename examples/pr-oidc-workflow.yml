@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches:
+      - '**' # Match any branch
 
 permissions:
   id-token: write

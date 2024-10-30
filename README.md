@@ -158,6 +158,7 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches:
+      - '**' # Match any branch
 
 env:
   AWS_REGION: 'us-east-1'
@@ -233,6 +234,7 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches:
+      - '**' # Match any branch
 
 permissions:
   id-token: write
