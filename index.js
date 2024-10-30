@@ -21,14 +21,8 @@ async function main() {
         }
 
         // Extract payload from GitHub context
-        const eventName = github.context.eventName;
-        if (debug) {
-            core.info(`[${getTimestamp()}] ${eventName}`);
-        }
         const payload = github.context.payload;
-        if (debug) {
-            core.info(`[${getTimestamp()}] ${payload}`);
-        }
+        const eventName = github.context.eventName;
 
         // Parse inputs from the GitHub Action workflow
         const ignorePatterns = core.getInput('ignore_patterns')
@@ -44,11 +38,11 @@ async function main() {
         const { GITHUB_REPOSITORY: githubRepository } = process.env;
         const [owner, repo] = githubRepository.split('/');
 
-        let sessionId, changedFiles, comments = [];
+        let prNumber, prId, sessionId, changedFiles;
 
         if (eventName === 'pull_request') {
             // Handle pull request event
-            const { number: prNumber, id: prId } = payload.pull_request;
+            ({ number: prNumber, id: prId } = payload.pull_request);
             sessionId = `pr-${prId}-${prNumber}`;
             core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
 
@@ -63,12 +57,6 @@ async function main() {
                 owner, repo, pull_number: prNumber
             });
             changedFiles = prFiles;
-
-            // Fetch existing comments on the PR
-            const { data: prComments } = await octokit.rest.issues.listComments({
-                owner, repo, issue_number: prNumber
-            });
-            comments = prComments;
         } else if (eventName === 'push') {
             // Handle push event
             const pushId = payload.after;
@@ -140,12 +128,12 @@ async function main() {
 
         // Post the agent's response as a comment for PR or print for other events
         if (eventName === 'pull_request') {
-            core.info(`[${getTimestamp()}] Posting analysis comment to PR #${payload.pull_request.number}`);
-            const commentBody = formatMarkdownComment(agentResponse, payload.pull_request.number, relevantCode.length, relevantDiffs.length, changedFiles);
+            core.info(`[${getTimestamp()}] Posting analysis comment to PR #${prNumber}`);
+            const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length, changedFiles);
             await octokit.rest.issues.createComment({
-                owner, repo, issue_number: payload.pull_request.number, body: commentBody
+                owner, repo, issue_number: prNumber, body: commentBody
             });
-            core.info(`[${getTimestamp()}] Successfully posted comment to PR #${payload.pull_request.number}`);
+            core.info(`[${getTimestamp()}] Successfully posted comment to PR #${prNumber}`);
         } else {
             core.info(`[${getTimestamp()}] Printing analysis for ${eventName} event`);
             const analysisOutput = formatMarkdownAnalysis(agentResponse, payload.after, relevantCode.length, relevantDiffs.length, changedFiles);
