@@ -23,6 +23,10 @@ async function main() {
         // Extract payload from GitHub context
         const payload = github.context.payload;
         const eventName = github.context.eventName;
+        if (debug) {
+            core.info(`[${getTimestamp()}] ${payload}`);
+            core.info(`[${getTimestamp()}] ${eventName}`);
+        }
 
         // Parse inputs from the GitHub Action workflow
         const ignorePatterns = core.getInput('ignore_patterns')
