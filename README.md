@@ -156,6 +156,9 @@ name: Custom Analysis Workflow
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - '**' # Match any branch
 
 env:
   AWS_REGION: 'us-east-1'
@@ -229,6 +232,9 @@ name: Custom Analysis Workflow
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - '**' # Match any branch
 
 permissions:
   id-token: write

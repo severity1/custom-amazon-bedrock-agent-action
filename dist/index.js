@@ -57677,6 +57677,7 @@ async function main() {
 
         // Extract payload from GitHub context
         const payload = github.context.payload;
+        const eventName = github.context.eventName;
 
         // Parse inputs from the GitHub Action workflow
         const ignorePatterns = core.getInput('ignore_patterns')
@@ -57688,34 +57689,52 @@ async function main() {
         const debug = core.getBooleanInput('debug');
         const memoryId = core.getInput('memory_id').trim() || undefined;
 
-        // Extract PR information from the GitHub context
+        // Extract repository information
         const { GITHUB_REPOSITORY: githubRepository } = process.env;
-        const { number: prNumber, id: prId } = payload.pull_request;
-
-        if (!githubRepository || !prNumber || !prId) {
-            core.setFailed("Error: Missing required PR information.");
-            return;
-        }
-
-        // Parse repository owner and name
         const [owner, repo] = githubRepository.split('/');
-        core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
 
-        // Generate a unique session ID for the PR
-        const sessionId = `${prId}-${prNumber}`;
+        let prNumber, prId, sessionId, changedFiles;
 
-        // Check if the PR is being closed or merged
-        const action = payload.action;
-        if (action === 'closed') {
-            await handleClosedPR(agentId, agentAliasId, sessionId);
+        if (eventName === 'pull_request') {
+            // Handle pull request event
+            ({ number: prNumber, id: prId } = payload.pull_request);
+            sessionId = `pr-${prId}-${prNumber}`;
+            core.info(`[${getTimestamp()}] Processing PR #${prNumber} (ID: ${prId}) in repository ${owner}/${repo}`);
+
+            // Check if the PR is being closed or merged
+            if (payload.action === 'closed') {
+                await handleClosedPR(agentId, agentAliasId, sessionId);
+                return;
+            }
+
+            // Fetch the list of files changed in the PR
+            const { data: prFiles } = await octokit.rest.pulls.listFiles({
+                owner, repo, pull_number: prNumber
+            });
+            changedFiles = prFiles;
+
+            // Fetch comments for the PR (if needed)
+            const { data: prComments } = await octokit.rest.issues.listComments({
+                owner, repo, issue_number: prNumber
+            });
+            comments = prComments;
+        } else if (eventName === 'push') {
+            // Handle push event
+            const pushId = payload.after;
+            sessionId = `push-${pushId}`;
+            core.info(`[${getTimestamp()}] Processing push (ID: ${pushId}) in repository ${owner}/${repo}`);
+
+            // Fetch the list of files changed in the push
+            const { data: pushCommit } = await octokit.rest.repos.getCommit({
+                owner, repo, ref: pushId
+            });
+            changedFiles = pushCommit.files;
+        } else {
+            core.setFailed(`Unsupported event type: ${eventName}`);
             return;
         }
 
-        // Fetch the list of files changed in the PR
-        const { data: prFiles } = await octokit.rest.pulls.listFiles({
-            owner, repo, pull_number: prNumber
-        });
-        core.info(`[${getTimestamp()}] Retrieved ${prFiles.length} files from PR #${prNumber}`);
+        core.info(`[${getTimestamp()}] Retrieved ${changedFiles.length} changed files`);
 
         // Load patterns from .gitignore if it exists
         let gitignorePatterns = [];
@@ -57733,15 +57752,10 @@ async function main() {
         // Combine ignore patterns from both the input and .gitignore
         const allIgnorePatterns = [...ignorePatterns, ...gitignorePatterns];
 
-        // Fetch existing comments on the PR
-        const { data: comments } = await octokit.rest.issues.listComments({
-            owner, repo, issue_number: prNumber
-        });
-
         // Initialize arrays to store relevant code and diffs
         const relevantCode = [];
         const relevantDiffs = [];
-        await Promise.all(prFiles.map(file => processFile(file, allIgnorePatterns, comments, relevantCode, relevantDiffs, owner, repo)));
+        await Promise.all(changedFiles.map(file => processFile(file, allIgnorePatterns, relevantCode, relevantDiffs, owner, repo, eventName, eventName === 'pull_request' ? comments : undefined)));
 
         // Check if there are any relevant code or diffs to analyze
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
@@ -57750,9 +57764,9 @@ async function main() {
         }
 
         // Prepare the prompt for the Bedrock Agent
-        const diffsPrompt = `Pull Request Diffs:\n${relevantDiffs.join('')}`;
+        const diffsPrompt = `Changes:\n${relevantDiffs.join('')}`;
         const prompt = relevantCode.length
-            ? `Content of Affected Files:\n${relevantCode.join('')}\nUse the files above to provide context on the changes made in this PR.\n${diffsPrompt}\n${actionPrompt}`
+            ? `Content of Affected Files:\n${relevantCode.join('')}\nUse the files above to provide context on the changes made.\n${diffsPrompt}\n${actionPrompt}`
             : `${diffsPrompt}\n${actionPrompt}`;
 
         // Validate the prompt before proceeding
@@ -57773,14 +57787,20 @@ async function main() {
             core.info(`[${getTimestamp()}] Bedrock Agent response:\n${agentResponse}`);
         }
 
-        // Post the agent's response as a comment on the PR
-        core.info(`[${getTimestamp()}] Posting analysis comment to PR #${prNumber}`);
-        const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length, prFiles);
-        await octokit.rest.issues.createComment({
-            owner, repo, issue_number: prNumber, body: commentBody
-        });
-
-        core.info(`[${getTimestamp()}] Successfully posted comment to PR #${prNumber}`);
+        // Post the agent's response as a comment for PR or print for other events
+        if (eventName === 'pull_request') {
+            core.info(`[${getTimestamp()}] Posting analysis comment to PR #${prNumber}`);
+            const commentBody = formatMarkdownComment(agentResponse, prNumber, relevantCode.length, relevantDiffs.length, changedFiles);
+            await octokit.rest.issues.createComment({
+                owner, repo, issue_number: prNumber, body: commentBody
+            });
+            core.info(`[${getTimestamp()}] Successfully posted comment to PR #${prNumber}`);
+        } else {
+            core.info(`[${getTimestamp()}] Printing analysis for ${eventName} event`);
+            const analysisOutput = formatMarkdownAnalysis(agentResponse, payload.after, relevantCode.length, relevantDiffs.length, changedFiles);
+            console.info(analysisOutput);
+            core.info(`[${getTimestamp()}] Analysis output printed to console`);
+        }
     } catch (error) {
         core.setFailed(`[${getTimestamp()}] Error: ${error.message}`);
     }
@@ -57799,17 +57819,19 @@ async function handleClosedPR(agentId, agentAliasId, sessionId) {
 }
 
 
-// Process each file in the PR to check if it should be analyzed
-async function processFile(file, ignorePatterns, comments, relevantCode, relevantDiffs, owner, repo) {
+// Process each file in the PR or Push event to check if it should be analyzed
+async function processFile(file, ignorePatterns, relevantCode, relevantDiffs, owner, repo, eventName, comments = []) {
     const { filename, status } = file;
 
     // Only process added, modified, or renamed files that don't match ignore patterns
     if (['added', 'modified', 'renamed'].includes(status) && !ignorePatterns.some(pattern => minimatch(filename, pattern))) {
-        // Skip analysis if the file has already been commented on
-        if (comments.some(comment => comment.body.includes(filename))) {
-            core.info(`[${getTimestamp()}] Skipping file ${filename} as it is already analyzed.`);
-            relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
-            return;
+        if (eventName === 'pull_request') {
+            // Skip analysis if the file has already been commented on (only for pull requests)
+            if (comments.some(comment => comment.body.includes(filename))) {
+                core.info(`[${getTimestamp()}] Skipping file ${filename} as it is already analyzed.`);
+                relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
+                return;
+            }
         }
 
         // Attempt to fetch the file content for analysis
@@ -57825,7 +57847,11 @@ async function processFile(file, ignorePatterns, comments, relevantCode, relevan
         }
 
         // Store the diff for the file
-        relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
+        if (file.patch) {
+            relevantDiffs.push(`File: ${filename} (Status: ${status})\n\`\`\`diff\n${file.patch}\n\`\`\`\n`);
+        } else {
+            relevantDiffs.push(`File: ${filename} (Status: ${status})\n`);
+        }
     }
 }
 
@@ -57836,6 +57862,15 @@ function formatMarkdownComment(response, prNumber, filesAnalyzed, diffsAnalyzed,
         .join('\n');
 
     return `## Analysis for Pull Request #${prNumber}\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n### Files in the PR:\n${fileSummary}\n\n${response}`;
+}
+
+// Add a new function to format the issue for push events
+function formatMarkdownAnalysis(response, commitSha, filesAnalyzed, diffsAnalyzed, changedFiles) {
+    const fileSummary = changedFiles
+        .map(file => `- **${file.filename}**: ${file.status}`)
+        .join('\n');
+
+    return `## Analysis for Push (Commit: ${commitSha.substring(0, 7)})\n\n### Files Analyzed: ${filesAnalyzed}\n### Diffs Analyzed: ${diffsAnalyzed}\n\n### Files Changed:\n${fileSummary}\n\n${response}`;
 }
 
 // Get the current timestamp in ISO format
