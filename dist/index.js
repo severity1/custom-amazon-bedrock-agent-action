@@ -57721,14 +57721,26 @@ async function main() {
         } else if (eventName === 'push') {
             // Handle push event
             const pushId = payload.after;
+            const branchName = payload.ref.replace('refs/heads/', '');
             sessionId = `push-${pushId}`;
-            core.info(`[${getTimestamp()}] Processing push (ID: ${pushId}) in repository ${owner}/${repo}`);
-
-            // Fetch the list of files changed in the push
-            const { data: pushCommit } = await octokit.rest.repos.getCommit({
-                owner, repo, ref: pushId
+            core.info(`[${getTimestamp()}] Processing push (ID: ${pushId}) in repository ${owner}/${repo} on branch ${branchName}`);
+        
+            // Get the default branch name
+            const { data: repoInfo } = await octokit.rest.repos.get({
+                owner,
+                repo
             });
-            changedFiles = pushCommit.files;
+            const defaultBranch = repoInfo.default_branch;
+        
+            // Fetch all changes in the branch compared to the default branch
+            const { data: comparison } = await octokit.rest.repos.compareCommits({
+                owner,
+                repo,
+                base: defaultBranch,
+                head: branchName
+            });
+        
+            changedFiles = comparison.files;
         } else {
             core.setFailed(`Unsupported event type: ${eventName}`);
             return;
