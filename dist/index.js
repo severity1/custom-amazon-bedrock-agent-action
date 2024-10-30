@@ -57721,14 +57721,19 @@ async function main() {
         } else if (eventName === 'push') {
             // Handle push event
             const pushId = payload.after;
+            const baseRef = payload.before;
             sessionId = `push-${pushId}`;
             core.info(`[${getTimestamp()}] Processing push (ID: ${pushId}) in repository ${owner}/${repo}`);
 
-            // Fetch the list of files changed in the push
-            const { data: pushCommit } = await octokit.rest.repos.getCommit({
-                owner, repo, ref: pushId
+            // Fetch all changes in the branch
+            const { data: comparison } = await octokit.rest.repos.compareCommits({
+                owner,
+                repo,
+                base: baseRef,
+                head: pushId
             });
-            changedFiles = pushCommit.files;
+
+            changedFiles = comparison.files;
         } else {
             core.setFailed(`Unsupported event type: ${eventName}`);
             return;
