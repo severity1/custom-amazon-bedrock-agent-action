@@ -57,6 +57,12 @@ async function main() {
                 owner, repo, pull_number: prNumber
             });
             changedFiles = prFiles;
+
+            // Fetch comments for the PR (if needed)
+            const { data: prComments } = await octokit.rest.issues.listComments({
+                owner, repo, issue_number: prNumber
+            });
+            comments = prComments;
         } else if (eventName === 'push') {
             // Handle push event
             const pushId = payload.after;
@@ -94,7 +100,7 @@ async function main() {
         // Initialize arrays to store relevant code and diffs
         const relevantCode = [];
         const relevantDiffs = [];
-        await Promise.all(changedFiles.map(file => processFile(file, allIgnorePatterns, relevantCode, relevantDiffs, owner, repo, eventName, comments)));
+        await Promise.all(changedFiles.map(file => processFile(file, allIgnorePatterns, relevantCode, relevantDiffs, owner, repo, eventName, eventName === 'pull_request' ? comments : undefined)));
 
         // Check if there are any relevant code or diffs to analyze
         if (relevantDiffs.length === 0 && relevantCode.length === 0) {
