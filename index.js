@@ -21,11 +21,13 @@ async function main() {
         }
 
         // Extract payload from GitHub context
-        const payload = github.context.payload;
         const eventName = github.context.eventName;
         if (debug) {
-            core.info(`[${getTimestamp()}] ${payload}`);
             core.info(`[${getTimestamp()}] ${eventName}`);
+        }
+        const payload = github.context.payload;
+        if (debug) {
+            core.info(`[${getTimestamp()}] ${payload}`);
         }
 
         // Parse inputs from the GitHub Action workflow
